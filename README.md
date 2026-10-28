@@ -20,10 +20,11 @@ For the USA game, CUSA13795 version 1.21, on the [OCTR port](https://github.com/
 
 Put received `.ctrghost` files there, then open the ghost menu of that track.
 
-Known limit: with mod packages enabled, the port runs the game on a copy of `mod-state/user` and only
-copies the saves back, so a ghost you export is lost when the game closes. Until the port keeps it
-(`port/keep-exported-ghosts.patch`), take the file from the newest folder in `mod-state/sessions/`
-(`<session>/user/data/ghosts/`) right after exporting.
+With mod packages enabled, the port runs the game on a copy of `mod-state/user` and copies back only
+the saves, so an exported ghost stays in that copy (`mod-state/sessions/<session>/user/data/ghosts/`,
+kept for the newest 3 sessions). The port change `port/keep-exported-ghosts.patch` copies exported
+ghosts back to `mod-state/user/data/ghosts/` when the game closes. Your own ghost is in your save, so
+you can always export it again.
 
 ## What a ghost carries
 Your name, driver, kart, time and the full recording of your driving line. The game draws ghosts as a
