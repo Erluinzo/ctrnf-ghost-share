@@ -15,7 +15,7 @@ ELF = Path(sys.argv[1]) if len(sys.argv) > 1 else HERE.parent / 'CTRNF/out/eboot
 XML = HERE / 'package/patches/GhostShare.xml'
 # The owner tests each build at once: a copy goes into the game's patches folder, switched on.
 TEST_COPY = HERE.parent / 'CTRNF/patches/GhostShare.xml'
-VERSION = '0.1.0'
+VERSION = '0.2.0'
 EBOOT_BASE = 0x400000       # patch XML addresses are ELF addresses + 0x400000
 
 CODE = 0x2320000            # unused zero padding at the end of the code segment (0x2317810-0x233c078)
@@ -34,7 +34,7 @@ GAME = {
     'game_string': 0x1574080, 'game_string_release': 0x1518e30,
     'game_fill_challenge_ghosts': 0xfceac0, 'game_send_event': 0x24de10, 'game_spawn_ghost': 0xf9bee0,
     'game_find_driver': 0xf9c610, 'game_find_kart': 0xf9c900, 'game_saved_ghost': 0xf9cc00,
-    'game_current_zone': 0x102e040, 'game_list_vtable': 0x2436b18,
+    'game_current_zone': 0x102e040, 'game_open_dialog': 0x9c3890, 'game_handle_free': 0x149f280, 'game_list_vtable': 0x2436b18,
     'game_button_select': 0x9b3a5a, 'game_button_exit': 0x9b3a34,
     # PS4 import stubs
     'sce_open': 0x1beab78, 'sce_pread': 0x1bea7b8, 'sce_pwrite': 0x1bea868, 'sce_close': 0x1beaa38,
@@ -42,7 +42,7 @@ GAME = {
     'sce_unlink': 0x1beaab8, 'sce_initial_user': 0x1be8df8, 'sce_user_name': 0x1bea528,
     'sce_save_mount2': 0x1beaa68, 'sce_save_umount': 0x1bea988,
     # data
-    'g_string_pool': 0x2af2600, 'g_racer_manager': 0x2ad4b70, 'g_zone_system': 0x2ae3c18,
+    'g_string_pool': 0x2af2600, 'g_racer_manager': 0x2ad4b70, 'g_zone_system': 0x2ae3c18, 'g_gui_manager': 0x2ac0dc0,
     'g_header_meta': 0x2abc210, 'g_default_level': 0x1df8d10, 'game_race_flag': 0x2a92868, 'gs': STATE,
 }
 

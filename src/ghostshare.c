@@ -36,6 +36,10 @@ extern void *game_find_driver(void *drivers, const char *name) GAME;
 extern void *game_find_kart(void *karts, const char *name) GAME;
 extern void *game_saved_ghost(const char *level) GAME;
 extern void *game_current_zone(void *zones) GAME;
+/* Opens the game's notice popup (CDialogBoxInfo in "Octane_YesNoDialog"); Cross closes it */
+extern void game_open_dialog(void **handle, void *gui, char **title, char **body, void *user_data,
+                             void *on_close, int a, int b) GAME;
+extern void game_handle_free(void **handle) GAME;
 /* PS4 system calls (the game's import stubs); errors are negative */
 extern int sce_open(const char *path, int flags, int mode) GAME;
 extern int64_t sce_pread(int fd, void *buffer, uint64_t size, int64_t offset) GAME;
@@ -52,6 +56,7 @@ extern int sce_save_umount(const void *point) GAME;
 extern void *g_string_pool GAME;
 extern char *g_racer_manager GAME;
 extern void *g_zone_system GAME;
+extern void *g_gui_manager GAME;
 extern void *g_header_meta GAME;
 extern const char g_default_level[] GAME;
 extern const char game_list_vtable[] GAME;                                  /* igGuiList */
@@ -470,9 +475,64 @@ static int export_own_ghost(void)
     return ok ? EXPORT_OK : EXPORT_WRITE_FAILED;
 }
 
+/* Adds text at the end of out (size bytes, always ends with 0) */
+static void add_text(char *out, int size, const char *text)
+{
+    int n = 0;
+    while (out[n]) n++;
+    copy_text(out + n, text, size - n);
+}
+
+/* Shows the game's notice popup, as its team select screen does (0x9c289e) */
+static void show_popup(const char *title_text, const char *body_text)
+{
+    if (!g_gui_manager) return;
+    char *title = game_string(g_string_pool, title_text);
+    char *body = game_string(g_string_pool, body_text);
+    void *handle = 0;
+    game_open_dialog(&handle, g_gui_manager, &title, &body, 0, 0, 5, -2);
+    if (handle) {   /* the popup keeps its own reference; drop ours as the game does */
+        uint32_t old = __atomic_fetch_add((uint32_t *)handle, -1, __ATOMIC_SEQ_CST);
+        if ((old & 0xffff) == ((old & 0x90000000) ? 3u : 2u)) game_handle_free(&handle);
+    }
+    game_string_release(g_string_pool, title - 0x10);
+    game_string_release(g_string_pool, body - 0x10);
+}
+
+/* Tells the player where the exported file is and how to share it, or why there is none */
+static void show_export_result(int result)
+{
+    char body[600] = {0};
+    if (result == EXPORT_OK) {
+        int user = 1;
+        sce_initial_user(&user);
+        char number[12] = {0};
+        int n = 0;
+        for (int u = user < 0 ? 0 : user; n == 0 || u; u /= 10)
+            n++;
+        for (int i = n - 1, u = user < 0 ? 0 : user; i >= 0; i--, u /= 10)
+            number[i] = (char)('0' + u % 10);
+        add_text(body, sizeof body, gs.export_file);
+        add_text(body, sizeof body, "\n\nWhere: in your OCTR folder, mod-state/user/savedata/");
+        add_text(body, sizeof body, number);
+        add_text(body, sizeof body, "/CUSA13795/GhostShare (without mod packages: user/savedata/...)."
+                 "\n\nSend this file to anyone. They put it in mod-state/user/data/ghosts "
+                 "(without mod packages: user/data/ghosts) and choose your ghost in this track's ghost menu.");
+        show_popup("Ghost exported", body);
+        return;
+    }
+    add_text(body, sizeof body,
+             result == EXPORT_NO_LEVEL || result == EXPORT_NO_GHOST ? "You have no saved ghost for this track yet."
+             : result == EXPORT_BAD_GHOST ? "Your saved ghost for this track could not be read."
+             : "The file could not be written.");
+    show_popup("Ghost not exported", body);
+}
+
 /* Any button other than Select on a ghost menu entry; own = it is your own ghost's entry. */
 void gs_entry_button(int signal, int own)
 {
     gs.last_signal = signal;
-    if (signal == EXPORT_SIGNAL && own) gs.export_result = export_own_ghost();
+    if (signal != EXPORT_SIGNAL || !own) return;
+    gs.export_result = export_own_ghost();
+    show_export_result(gs.export_result);
 }

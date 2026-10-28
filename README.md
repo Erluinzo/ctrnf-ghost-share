@@ -8,8 +8,8 @@ For the USA game, CUSA13795 version 1.21, on the [OCTR port](https://github.com/
   ghost menu, under the challenge ghosts, with the sharer's name, their driver and their time. Select
   it like any other ghost; you can race several at once (up to 6 shared ghosts per track).
 - **Export your own ghost.** In the ghost menu, move to your own ghost (under "Player Ghost") and press
-  **R1**. The file `<track>_<time>_<your name>.ctrghost` appears in the export folder (below). Send it to
-  anyone. Your ghost is kept in your save, so you can export it again at any time.
+  **R1**. The file `<track>_<time>_<your name>.ctrghost` appears in the export folder (below), and a
+  popup shows its name and where to find it. Send it to anyone. Your ghost is kept in your save, so you can export it again at any time.
 - **It counts for nothing.** Beating a shared ghost does not unlock ghosts, give trophies or change
   stats. Your own time and ghost are saved as in any Time Trial race.
 
