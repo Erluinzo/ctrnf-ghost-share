@@ -19,10 +19,23 @@ For the USA game, CUSA13795 version 1.21, on the [OCTR port](https://github.com/
 | Received ghosts: put them here | `mod-state/user/data/ghosts/` | `user/data/ghosts/` |
 | Your exports appear here | `mod-state/user/savedata/1/CUSA13795/GhostShare/` | `user/savedata/1/CUSA13795/GhostShare/` |
 
-Paths are in the OCTR folder. Exports go to a save data folder of the patch's own, because saves are
-the only files the port keeps after a game with mod packages. The game never reads that folder: it
-opens its own saves by name. Put received files in place while the game is closed or before you open
-the ghost menu of that track.
+Paths are in the OCTR folder. If you installed the ZIP on the Mods page, use the first column.
+Exports go to a save data folder of the patch's own, because saves are the only files the port keeps
+after a game with mod packages. The game never reads that folder: it opens its own saves by name.
+
+## Install
+In the OCTR launcher: Mods > Add files, choose `ghost-share-1.0.0.zip` from the
+[releases](https://github.com/Erluinzo/ctrnf-ghost-share/releases), enable it, fully restart the game.
+
+## Import a ghost
+1. Close the game. With mod packages, the game only sees files that were there when it started.
+2. In your OCTR folder, open `mod-state/user/data/` and create a folder named `ghosts` if it is not there.
+3. Put the `.ctrghost` file in it. **Keep the original file name:** only letters, numbers, `_`, `-` and
+   `.` are allowed (at most 63 characters, ending in `.ctrghost`). A name like
+   `t112_roos_tubes_1m17s51_Neox (1).ctrghost`, as browsers and chat apps make for a second download,
+   is skipped without a message; rename it back.
+4. Start the game and open the ghost menu of that track. The ghost is at the bottom of the list, with
+   the sharer's name.
 
 ## What a ghost carries
 Your name, driver, kart, time and the full recording of your driving line. The game draws ghosts as a
