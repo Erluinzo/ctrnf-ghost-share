@@ -5,7 +5,8 @@
  * - Race start: chosen shared ghosts are taken out of the game's own selection list, so the game's
  *   file loader and its unlock rules never see them. Each file is then read again, checked value by
  *   value, built into a ghost in memory and added as an extra racer.
- * - Export: a button on your own ghost in the menu writes it to /data/ghosts.
+ * - Export: a button on your own ghost in the menu writes it to a save data folder of its own
+ *   (EXPORT_DIR). Saves are the only files the port keeps after a game with mod packages.
  *
  * Code and data addresses of the game come from build.py (--defsym). The image is not loaded at a
  * fixed address, so all of them are reached RIP-relative (hidden symbols, -fpie). The code segment
@@ -42,11 +43,11 @@ extern int64_t sce_pwrite(int fd, const void *buffer, uint64_t size, int64_t off
 extern int sce_close(int fd) GAME;
 extern int sce_fstat(int fd, void *stat) GAME;
 extern int64_t sce_getdents(int fd, char *buffer, uint64_t size) GAME;
-extern int sce_mkdir(const char *path, int mode) GAME;
-extern int sce_rename(const char *from, const char *to) GAME;
 extern int sce_unlink(const char *path) GAME;
 extern int sce_initial_user(int *user) GAME;
 extern int sce_user_name(int user, char *name, uint64_t size) GAME;
+extern int sce_save_mount2(const void *mount, void *result) GAME;
+extern int sce_save_umount(const void *point) GAME;
 /* Game data */
 extern void *g_string_pool GAME;
 extern char *g_racer_manager GAME;
@@ -60,6 +61,11 @@ extern const char game_list_vtable[] GAME;                                  /* i
 #define O_DIRECTORY 0x20000
 
 #define FOLDER "/data/ghosts"
+/* Save data folder for exports: <user>/savedata/<user id>/CUSA13795/GhostShare. The game opens
+ * its own saves by exact name (savedata0, savedata1), so it never reads this one. */
+#define EXPORT_DIR "GhostShare"
+#define MOUNT_RDWR_CREATE 0x22   /* RDWR | CREATE2 (create if missing) */
+#define MOUNT_BLOCKS 0x60        /* the smallest size the game asks for its own saves */
 #define MAX_SHARED 6        /* the game races at most 8 karts */
 #define LIST_BOTTOM_MARGIN 32.5f
 /* A path the game cannot open: if a shared entry ever reached the game's own loader, it fails. */
@@ -79,9 +85,10 @@ struct state {
     /* For tests and bug reports (tools/peek.py reads them from the running game) */
     int last_signal;        /* last button signal on a ghost entry, other than Select */
     int export_result;      /* EXPORT_* of the last export */
+    char export_file[64];   /* file name of the last export */
 };
 enum { EXPORT_NONE, EXPORT_OK, EXPORT_NO_LEVEL, EXPORT_NO_GHOST, EXPORT_BAD_GHOST, EXPORT_OPEN_FAILED,
-       EXPORT_WRITE_FAILED, EXPORT_RENAME_FAILED };
+       EXPORT_WRITE_FAILED, EXPORT_MOUNT_FAILED };
 _Static_assert(sizeof(struct state) <= 0x900, "state must fit the free space after the game's data");
 extern struct state gs GAME;
 
@@ -378,7 +385,7 @@ static void export_name(char *out, int size, const struct share_header *h)
     copy_text(out + n, ".ctrghost", size - n);
 }
 
-/* Writes your saved ghost of the menu's level to /data/ghosts. Returns EXPORT_*. */
+/* Writes your saved ghost of the menu's level to the export save folder. Returns EXPORT_*. */
 static int export_own_ghost(void)
 {
     if (!gs.level[0]) return EXPORT_NO_LEVEL;
@@ -397,26 +404,43 @@ static int export_own_ghost(void)
     h.input_count = AT(inputs, 0xc, uint32_t);
     h.time = AT(ghost, 0x28, float);
     int user = 0;
+    if (sce_initial_user(&user) < 0) return EXPORT_MOUNT_FAILED;
     char name[PLAYER_SIZE] = {0};
-    if (sce_initial_user(&user) < 0 || sce_user_name(user, name, sizeof name - 1) < 0) name[0] = 0;
+    if (sce_user_name(user, name, sizeof name - 1) < 0) name[0] = 0;
     share_player_name(name, h.player);
     copy_text(h.level, gs.level, LEVEL_SIZE);
     copy_text(h.driver, driver, NAME_SIZE);
     copy_text(h.kart, kart, NAME_SIZE);
     if (share_check_header(&h) != SHARE_OK) return EXPORT_BAD_GHOST;   /* never write a file we would refuse */
 
-    /* Written under a temporary name first, so a half-written file is never listed */
-    char file[64], path[sizeof FOLDER + 64], temp[sizeof FOLDER + 64 + 8];
+    /* OrbisSaveDataMount2 and OrbisSaveDataMountResult (64 bytes each; the result starts with the
+     * mount point, e.g. "/savedata2") */
+    struct { int32_t user, pad; const char *dir; uint64_t blocks; uint32_t mode; uint8_t reserved[36]; } mount;
+    struct { char point[16]; uint8_t rest[48]; } result;
+    _Static_assert(sizeof mount == 64 && sizeof result == 64, "PS4 save data mount layouts");
+    char dir[32] = EXPORT_DIR;
+    __builtin_memset(&mount, 0, sizeof mount);
+    __builtin_memset(&result, 0, sizeof result);
+    mount.user = user;
+    mount.dir = dir;
+    mount.blocks = MOUNT_BLOCKS;
+    mount.mode = MOUNT_RDWR_CREATE;
+    if (sce_save_mount2(&mount, &result) < 0) return EXPORT_MOUNT_FAILED;
+    result.point[15] = 0;
+
+    char file[64], path[16 + 1 + 64];
     export_name(file, sizeof file, &h);
-    copy_text(path, FOLDER "/", sizeof path);
-    copy_text(path + sizeof FOLDER, file, 64);
+    copy_text(path, result.point, sizeof path);
     int length = 0;
     while (path[length]) length++;
-    copy_text(temp, path, sizeof temp);
-    copy_text(temp + length, ".bbtmp", sizeof temp - length);
-    sce_mkdir(FOLDER, 0777);
-    int fd = sce_open(temp, O_WRITE_NEW, 0666);
-    if (fd < 0) return EXPORT_OPEN_FAILED;
+    path[length++] = '/';
+    copy_text(path + length, file, sizeof path - length);
+    /* The port writes save files to a copy and puts it in place at close: no half-written file */
+    int fd = sce_open(path, O_WRITE_NEW, 0666);
+    if (fd < 0) {
+        sce_save_umount(result.point);
+        return EXPORT_OPEN_FAILED;
+    }
 
     int ok = sce_pwrite(fd, &h, sizeof h, 0) == sizeof h;
     int64_t at = sizeof h;
@@ -440,9 +464,10 @@ static int export_own_ghost(void)
         at += sizeof k;
     }
     sce_close(fd);
-    if (ok && sce_rename(temp, path) >= 0) return EXPORT_OK;
-    sce_unlink(temp);
-    return ok ? EXPORT_RENAME_FAILED : EXPORT_WRITE_FAILED;
+    if (!ok) sce_unlink(path);
+    sce_save_umount(result.point);
+    if (ok) copy_text(gs.export_file, file, sizeof gs.export_file);
+    return ok ? EXPORT_OK : EXPORT_WRITE_FAILED;
 }
 
 /* Any button other than Select on a ghost menu entry; own = it is your own ghost's entry. */

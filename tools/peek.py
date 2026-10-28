@@ -12,7 +12,7 @@ PROBE = 0xfcc430    # the ghost manager's race-end function: its prologue is kno
 PROLOGUE = bytes.fromhex('554889e541574156415541545348')
 STATE = 0x2bee680
 SHARED_SIZE = 112   # void *header; char file[64]; char player[32]; uint8_t chosen; padding
-EXPORT = ['none', 'ok', 'no level', 'no saved ghost', 'bad ghost', 'open failed', 'write failed', 'rename failed']
+EXPORT = ['none', 'ok', 'no level', 'no saved ghost', 'bad ghost', 'open failed', 'write failed', 'mount failed']
 
 
 def find_base(mem, maps):
@@ -33,7 +33,7 @@ def main():
     with open(f'/proc/{pid}/mem', 'rb') as mem:
         base = find_base(mem, maps)
         mem.seek(base + STATE)
-        state = mem.read(0x310)
+        state = mem.read(0x350)
     text = lambda b: b.split(b'\0')[0].decode(errors='replace')
     count, = struct.unpack_from('<i', state, 0x60)
     last_signal, export_result = struct.unpack_from('<ii', state, 0x68 + 6 * SHARED_SIZE)
@@ -44,7 +44,8 @@ def main():
         print(f'  {text(state[at + 8:at + 72])}: player "{text(state[at + 72:at + 104])}", '
               f'chosen {state[at + 104]}, header {header:#x}')
     print(f'last button signal {last_signal}; last export: '
-          f'{EXPORT[export_result] if 0 <= export_result < len(EXPORT) else export_result}')
+          f'{EXPORT[export_result] if 0 <= export_result < len(EXPORT) else export_result}'
+          f' "{text(state[0x70 + 6 * SHARED_SIZE:0xb0 + 6 * SHARED_SIZE])}"')
 
 
 if __name__ == '__main__':

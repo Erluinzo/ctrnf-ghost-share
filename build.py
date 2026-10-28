@@ -38,8 +38,9 @@ GAME = {
     'game_button_select': 0x9b3a5a, 'game_button_exit': 0x9b3a34,
     # PS4 import stubs
     'sce_open': 0x1beab78, 'sce_pread': 0x1bea7b8, 'sce_pwrite': 0x1bea868, 'sce_close': 0x1beaa38,
-    'sce_fstat': 0x1beac08, 'sce_getdents': 0x1beaa18, 'sce_mkdir': 0x1beaad8, 'sce_rename': 0x1beaae8,
+    'sce_fstat': 0x1beac08, 'sce_getdents': 0x1beaa18,
     'sce_unlink': 0x1beaab8, 'sce_initial_user': 0x1be8df8, 'sce_user_name': 0x1bea528,
+    'sce_save_mount2': 0x1beaa68, 'sce_save_umount': 0x1bea988,
     # data
     'g_string_pool': 0x2af2600, 'g_racer_manager': 0x2ad4b70, 'g_zone_system': 0x2ae3c18,
     'g_header_meta': 0x2abc210, 'g_default_level': 0x1df8d10, 'game_race_flag': 0x2a92868, 'gs': STATE,
