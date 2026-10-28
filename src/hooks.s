@@ -69,6 +69,29 @@ hook_button:
     RESTORE
     jmp game_button_exit                    # as the game does for every other button
 
+# Replace "call focus_gained_event" at 0x9b3baa and "call focus_lost_event" at 0x9b3998 in the ghost
+# menu entry's event handler (0x9b3830): r12 = entry behavior, [rbp-0xa8] = entry placeable. The game's
+# call follows with rdi unchanged.
+    .globl hook_focus_gain
+hook_focus_gain:
+    SAVE
+    mov rdi, r12
+    mov rsi, [rbp - 0xa8]
+    mov edx, 1
+    call gs_entry_focus
+    RESTORE
+    jmp game_focus_gain_event
+
+    .globl hook_focus_lost
+hook_focus_lost:
+    SAVE
+    mov rdi, r12
+    mov rsi, [rbp - 0xa8]
+    xor edx, edx
+    call gs_entry_focus
+    RESTORE
+    jmp game_focus_lost_event
+
 # Called from 0xf9b298 at race start (r15 = ghost manager), in place of "cmp byte [r15+0x48], 0".
     .globl hook_take_chosen
 hook_take_chosen:

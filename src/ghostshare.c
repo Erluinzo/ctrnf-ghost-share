@@ -7,6 +7,7 @@
  *   value, built into a ghost in memory and added as an extra racer.
  * - Export: a button on your own ghost in the menu writes it to a save data folder of its own
  *   (EXPORT_DIR). Saves are the only files the port keeps after a game with mod packages.
+ *   While your own ghost is focused, the menu's button bar shows the export button.
  *
  * Code and data addresses of the game come from build.py (--defsym). The image is not loaded at a
  * fixed address, so all of them are reached RIP-relative (hidden symbols, -fpie). The code segment
@@ -40,6 +41,8 @@ extern void *game_current_zone(void *zones) GAME;
 extern void game_open_dialog(void **handle, void *gui, char **title, char **body, void *user_data,
                              void *on_close, int a, int b) GAME;
 extern void game_handle_free(void **handle) GAME;
+/* Adds a button to the button bar of a GUI project (addButtonToLegend_VSC) */
+extern void game_legend_add(void *project, int button, char **text, int always) GAME;
 /* PS4 system calls (the game's import stubs); errors are negative */
 extern int sce_open(const char *path, int flags, int mode) GAME;
 extern int64_t sce_pread(int fd, void *buffer, uint64_t size, int64_t offset) GAME;
@@ -71,6 +74,7 @@ extern const char game_list_vtable[] GAME;                                  /* i
 #define EXPORT_DIR "GhostShare"
 #define MOUNT_RDWR_CREATE 0x22   /* RDWR | CREATE2 (create if missing) */
 #define MOUNT_BLOCKS 0x60        /* the smallest size the game asks for its own saves */
+#define LEGEND_R1 6              /* EButtonLegendButton; must match EXPORT_SIGNAL */
 #define MAX_SHARED 6        /* the game races at most 8 karts */
 #define LIST_BOTTOM_MARGIN 32.5f
 /* A path the game cannot open: if a shared entry ever reached the game's own loader, it fails. */
@@ -526,6 +530,27 @@ static void show_export_result(int result)
              : result == EXPORT_BAD_GHOST ? "Your saved ghost for this track could not be read."
              : "The file could not be written.");
     show_popup("Ghost not exported", body);
+}
+
+/* A ghost menu entry gets (gained = 1) or loses focus. While your own ghost is focused, the button
+ * bar shows the export button. placeable = the entry's GUI placeable (+0x20: the menu's project). */
+void gs_entry_focus(void *behavior, void *placeable, int gained)
+{
+    if (!behavior || !placeable || !AT(behavior, 0x4d, uint8_t) || !g_gui_manager) return;
+    void *project = AT(placeable, 0x20, void *);
+    if (!project) return;
+    if (gained) {
+        char *text = game_string(g_string_pool, "Export ghost");
+        game_legend_add(project, LEGEND_R1, &text, 1);
+        game_string_release(g_string_pool, text - 0x10);
+        return;
+    }
+    /* As removeButtonFromLegend_VSC (0x110bcb0): the GUI manager's remove event, sent to the project */
+    void *event = AT(g_gui_manager, 0xf0, void *);
+    if (!event) return;
+    AT(event, 0x18, int32_t) = LEGEND_R1;
+    typedef void handler(void *project, void *event);
+    AT(*(void **)project, 0xb0, handler *)(project, event);
 }
 
 /* Any button other than Select on a ghost menu entry; own = it is your own ghost's entry. */

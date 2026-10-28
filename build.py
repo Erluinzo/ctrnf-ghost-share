@@ -15,7 +15,7 @@ ELF = Path(sys.argv[1]) if len(sys.argv) > 1 else HERE.parent / 'CTRNF/out/eboot
 XML = HERE / 'package/patches/GhostShare.xml'
 # The owner tests each build at once: a copy goes into the game's patches folder, switched on.
 TEST_COPY = HERE.parent / 'CTRNF/patches/GhostShare.xml'
-VERSION = '0.2.0'
+VERSION = '0.3.0'
 EBOOT_BASE = 0x400000       # patch XML addresses are ELF addresses + 0x400000
 
 CODE = 0x2320000            # unused zero padding at the end of the code segment (0x2317810-0x233c078)
@@ -34,7 +34,8 @@ GAME = {
     'game_string': 0x1574080, 'game_string_release': 0x1518e30,
     'game_fill_challenge_ghosts': 0xfceac0, 'game_send_event': 0x24de10, 'game_spawn_ghost': 0xf9bee0,
     'game_find_driver': 0xf9c610, 'game_find_kart': 0xf9c900, 'game_saved_ghost': 0xf9cc00,
-    'game_current_zone': 0x102e040, 'game_open_dialog': 0x9c3890, 'game_handle_free': 0x149f280, 'game_list_vtable': 0x2436b18,
+    'game_current_zone': 0x102e040, 'game_open_dialog': 0x9c3890, 'game_handle_free': 0x149f280,
+    'game_legend_add': 0xa09d30, 'game_focus_gain_event': 0x10ee760, 'game_focus_lost_event': 0x10ee880, 'game_list_vtable': 0x2436b18,
     'game_button_select': 0x9b3a5a, 'game_button_exit': 0x9b3a34,
     # PS4 import stubs
     'sce_open': 0x1beab78, 'sce_pread': 0x1bea7b8, 'sce_pwrite': 0x1bea868, 'sce_close': 0x1beaa38,
@@ -52,6 +53,8 @@ HOOKS = [
     (0x9e2d22, 'e899bd5e00', 'e8', 'hook_fill', 0),
     (0x9b3e88, 'e8839f89ff', 'e8', 'hook_entry_setup', 0),          # entry text: send setup event
     (0x9b3a53, '41837d180875da', 'e9', 'hook_button', 2),           # button on an entry
+    (0x9b3baa, 'e8b1ab7300', 'e8', 'hook_focus_gain', 0),           # an entry gets focus
+    (0x9b3998, 'e8e3ae7300', 'e8', 'hook_focus_lost', 0),           # an entry loses focus
     (0xf9b298, '41807f4800', 'e8', 'hook_take_chosen', 0),          # race start, before chosen ghosts load
     (0xf9b329, '8a053975af01', 'e8', 'hook_add_chosen', 1),         # race start, after them
 ]
