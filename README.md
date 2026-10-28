@@ -1,6 +1,6 @@
 # Ghost Sharing (CTR Nitro-Fueled, OCTR PC port)
 
-A game patch by Neox: race other players' Time Trial ghosts, and share your own.
+A game patch by Onur: race other players' Time Trial ghosts, and share your own.
 For the USA game, CUSA13795 version 1.21, on the [OCTR port](https://github.com/Ryu7w7/OCTR-NitroFueled-PC).
 
 ## What it does

@@ -1,5 +1,5 @@
 Ghost Sharing 0.3.0
-Author: Neox
+Author: Onur
 
 Race other players' Time Trial ghosts, and share your own.
 

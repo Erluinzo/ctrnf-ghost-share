@@ -160,7 +160,7 @@ def main():
   <TitleID><ID>CUSA13795</ID></TitleID>
   <Metadata Title="Crash Team Racing Nitro-Fueled" Name="Ghost Sharing"
             Note="Race other players' shared ghosts (folder data/ghosts) and export your own from the ghost menu."
-            Author="Neox" PatchVer="{VERSION}" AppVer="01.21" AppElf="eboot.bin">
+            Author="Onur" PatchVer="{VERSION}" AppVer="01.21" AppElf="eboot.bin">
     <PatchList>
 {chr(10).join(line(*l) for l in lines)}
     </PatchList>
