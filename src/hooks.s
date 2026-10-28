@@ -42,6 +42,13 @@
     pop rax
 .endm
 
+# Replaces "call fill_challenge_ghosts(level, &list)" at 0x9e2756 and 0x9e2d22, in the ghost menu's
+# populate function; its caller keeps the menu's igGuiList in r15, which populate saved at [rbp-8].
+    .globl hook_fill
+hook_fill:
+    mov rdx, [rbp - 8]
+    jmp gs_fill_ghost_list
+
 # Replaces "call send_event(target, event)" at 0x9b3e88 when a ghost menu entry is set up.
 # The entry's behavior object is at [rbp-0xb0] in that function.
     .globl hook_entry_setup

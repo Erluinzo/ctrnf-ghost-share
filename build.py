@@ -34,7 +34,7 @@ GAME = {
     'game_string': 0x1574080, 'game_string_release': 0x1518e30,
     'game_fill_challenge_ghosts': 0xfceac0, 'game_send_event': 0x24de10, 'game_spawn_ghost': 0xf9bee0,
     'game_find_driver': 0xf9c610, 'game_find_kart': 0xf9c900, 'game_saved_ghost': 0xf9cc00,
-    'game_current_zone': 0x102e040,
+    'game_current_zone': 0x102e040, 'game_list_vtable': 0x2436b18,
     'game_button_select': 0x9b3a5a, 'game_button_exit': 0x9b3a34,
     # PS4 import stubs
     'sce_open': 0x1beab78, 'sce_pread': 0x1bea7b8, 'sce_pwrite': 0x1bea868, 'sce_close': 0x1beaa38,
@@ -47,8 +47,8 @@ GAME = {
 
 # (address, original bytes, new instruction, target symbol, padding): each replaces whole instructions
 HOOKS = [
-    (0x9e2756, 'e865c35e00', 'e8', 'gs_fill_ghost_list', 0),        # ghost menu: add challenge ghosts
-    (0x9e2d22, 'e899bd5e00', 'e8', 'gs_fill_ghost_list', 0),
+    (0x9e2756, 'e865c35e00', 'e8', 'hook_fill', 0),                 # ghost menu: add challenge ghosts
+    (0x9e2d22, 'e899bd5e00', 'e8', 'hook_fill', 0),
     (0x9b3e88, 'e8839f89ff', 'e8', 'hook_entry_setup', 0),          # entry text: send setup event
     (0x9b3a53, '41837d180875da', 'e9', 'hook_button', 2),           # button on an entry
     (0xf9b298, '41807f4800', 'e8', 'hook_take_chosen', 0),          # race start, before chosen ghosts load

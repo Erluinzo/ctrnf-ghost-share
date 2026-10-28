@@ -53,6 +53,7 @@ extern char *g_racer_manager GAME;
 extern void *g_zone_system GAME;
 extern void *g_header_meta GAME;
 extern const char g_default_level[] GAME;
+extern const char game_list_vtable[] GAME;                                  /* igGuiList */
 
 #define O_READ 0
 #define O_WRITE_NEW 0x601   /* write, create, truncate */
@@ -60,6 +61,7 @@ extern const char g_default_level[] GAME;
 
 #define FOLDER "/data/ghosts"
 #define MAX_SHARED 6        /* the game races at most 8 karts */
+#define LIST_BOTTOM_MARGIN 32.5f
 /* A path the game cannot open: if a shared entry ever reached the game's own loader, it fails. */
 #define NO_FILE "data:\\Ghosts\\shared_ghost_is_not_a_game_file.igb"
 
@@ -166,8 +168,19 @@ static void forget_shared(void)
     gs.count = 0;
 }
 
-/* Called instead of the game's "add challenge ghosts" step when the ghost menu is filled. */
-void gs_fill_ghost_list(const char *level, void **list)
+/* The ghost menu's list never scrolls (focus scroll mode "none"), so entries after the 4 challenge
+ * ghosts would stay hidden under the button bar. With shared ghosts it scrolls just enough to show
+ * the focused entry; the bottom margin keeps that entry above the bar (the game's value is 2.5). */
+static void let_list_scroll(void *widget)
+{
+    if (!widget || AT(widget, 0, const void *) != game_list_vtable) return;
+    AT(widget, 0x74, int32_t) = 1;          /* _focusScrollMode: kFocusScrollToFit */
+    AT(widget, 0x4c, float) = LIST_BOTTOM_MARGIN;
+}
+
+/* Called instead of the game's "add challenge ghosts" step when the ghost menu is filled
+ * (widget: the menu's igGuiList, from hooks.s). */
+void gs_fill_ghost_list(const char *level, void **list, void *widget)
 {
     game_fill_challenge_ghosts(level, list);
     forget_shared();
@@ -212,6 +225,7 @@ void gs_fill_ghost_list(const char *level, void **list)
         }
     }
     sce_close(dir);
+    if (gs.count) let_list_scroll(widget);
 }
 
 static struct shared *find_shared(void *header)
