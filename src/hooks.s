@@ -55,14 +55,12 @@ hook_entry_setup:
 hook_button:
     cmp dword ptr [r13 + 0x18], 8           # Select: the game's own code
     je game_button_select
-    cmp dword ptr [r13 + 0x18], EXPORT_SIGNAL
-    jne game_button_exit
-    cmp byte ptr [r15 + 0x4d], 0
-    je game_button_exit
-    SAVE
-    call gs_export_own_ghost
+    SAVE                                    # other buttons: gs_entry_button(signal, own ghost)
+    mov edi, [r13 + 0x18]
+    movzx esi, byte ptr [r15 + 0x4d]
+    call gs_entry_button
     RESTORE
-    jmp game_button_exit
+    jmp game_button_exit                    # as the game does for every other button
 
 # Called from 0xf9b298 at race start (r15 = ghost manager), in place of "cmp byte [r15+0x48], 0".
     .globl hook_take_chosen

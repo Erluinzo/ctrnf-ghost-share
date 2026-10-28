@@ -74,7 +74,12 @@ struct state {
     char level[LEVEL_SIZE]; /* canonical name of the level in the ghost menu */
     int count;
     struct shared shared[MAX_SHARED];
+    /* For tests and bug reports (tools/peek.py reads them from the running game) */
+    int last_signal;        /* last button signal on a ghost entry, other than Select */
+    int export_result;      /* EXPORT_* of the last export */
 };
+enum { EXPORT_NONE, EXPORT_OK, EXPORT_NO_LEVEL, EXPORT_NO_GHOST, EXPORT_BAD_GHOST, EXPORT_OPEN_FAILED,
+       EXPORT_WRITE_FAILED, EXPORT_RENAME_FAILED };
 _Static_assert(sizeof(struct state) <= 0x900, "state must fit the free space after the game's data");
 extern struct state gs GAME;
 
@@ -356,15 +361,15 @@ static void export_name(char *out, int size, const struct share_header *h)
     copy_text(out + n, ".ctrghost", size - n);
 }
 
-/* Export button on your own ghost entry: writes your saved ghost of this level to /data/ghosts. */
-void gs_export_own_ghost(void)
+/* Writes your saved ghost of the menu's level to /data/ghosts. Returns EXPORT_*. */
+static int export_own_ghost(void)
 {
-    if (!gs.level[0]) return;
+    if (!gs.level[0]) return EXPORT_NO_LEVEL;
     void *ghost = game_saved_ghost(gs.level);
-    if (!ghost || AT(ghost, 0xc, int32_t) != 3) return;
+    if (!ghost || AT(ghost, 0xc, int32_t) != 3) return EXPORT_NO_GHOST;
     void *moves = AT(ghost, 0x30, void *), *inputs = AT(ghost, 0x38, void *);
     const char *driver = AT(ghost, 0x20, const char *), *kart = AT(ghost, 0x18, const char *);
-    if (!moves || !inputs || !driver || !kart) return;
+    if (!moves || !inputs || !driver || !kart) return EXPORT_BAD_GHOST;
 
     struct share_header h;
     __builtin_memset(&h, 0, sizeof h);
@@ -381,7 +386,7 @@ void gs_export_own_ghost(void)
     copy_text(h.level, gs.level, LEVEL_SIZE);
     copy_text(h.driver, driver, NAME_SIZE);
     copy_text(h.kart, kart, NAME_SIZE);
-    if (share_check_header(&h) != SHARE_OK) return;   /* never write a file we would refuse */
+    if (share_check_header(&h) != SHARE_OK) return EXPORT_BAD_GHOST;   /* never write a file we would refuse */
 
     /* Written under a temporary name first, so a half-written file is never listed */
     char file[64], path[sizeof FOLDER + 64], temp[sizeof FOLDER + 64 + 8];
@@ -394,7 +399,7 @@ void gs_export_own_ghost(void)
     copy_text(temp + length, ".bbtmp", sizeof temp - length);
     sce_mkdir(FOLDER, 0777);
     int fd = sce_open(temp, O_WRITE_NEW, 0666);
-    if (fd < 0) return;
+    if (fd < 0) return EXPORT_OPEN_FAILED;
 
     int ok = sce_pwrite(fd, &h, sizeof h, 0) == sizeof h;
     int64_t at = sizeof h;
@@ -418,6 +423,14 @@ void gs_export_own_ghost(void)
         at += sizeof k;
     }
     sce_close(fd);
-    if (ok && sce_rename(temp, path) >= 0) return;
+    if (ok && sce_rename(temp, path) >= 0) return EXPORT_OK;
     sce_unlink(temp);
+    return ok ? EXPORT_RENAME_FAILED : EXPORT_WRITE_FAILED;
+}
+
+/* Any button other than Select on a ghost menu entry; own = it is your own ghost's entry. */
+void gs_entry_button(int signal, int own)
+{
+    gs.last_signal = signal;
+    if (signal == EXPORT_SIGNAL && own) gs.export_result = export_own_ghost();
 }

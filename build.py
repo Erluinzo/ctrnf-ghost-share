@@ -22,8 +22,10 @@ CODE = 0x2320000            # unused zero padding at the end of the code segment
 CODE_END = 0x2338000        # the Time Trial patch starts here; tomtotom's drift gauge ends at 0x23192df
 STATE = 0x2bee680           # after the game's data (ends 0x2bee66d), before the page end 0x2bef000
 STATE_END = 0x2bef000
-# Button that exports your ghost in the ghost menu (igGuiInput signal; 10 = Option1, 11 = Option2)
-EXPORT_SIGNAL = 10
+MAX_WRITE = 4096
+# Button that exports your ghost in the ghost menu (igGuiInput signal). Tested in game: Triangle/Y
+# is 11 but also opens the Options screen; R1 is 16 and does nothing else there (L1 17, L2 15, R2 14).
+EXPORT_SIGNAL = 16
 
 GAME = {
     'game_ghost_new': 0x10e1050, 'game_move_key_new': 0x10e0cb0, 'game_input_key_new': 0x10e0d80,
@@ -80,10 +82,10 @@ def build_code(tmp):
     objects = []
     for source in ('ghostshare.c', 'share_format.c', 'mem.c'):
         obj = tmp / (source + '.o')
-        run('gcc', *CFLAGS, '-o', obj, HERE / 'src' / source)
+        run('gcc', *CFLAGS, f'-DEXPORT_SIGNAL={EXPORT_SIGNAL}', '-o', obj, HERE / 'src' / source)
         objects.append(obj)
     obj = tmp / 'hooks.o'
-    run('as', '--64', f'--defsym=EXPORT_SIGNAL={EXPORT_SIGNAL}', '-o', obj, HERE / 'src/hooks.s')
+    run('as', '--64', '-o', obj, HERE / 'src/hooks.s')
     objects.append(obj)
     for obj in objects:
         relocs = subprocess.run(['readelf', '-rW', obj], capture_output=True, text=True, check=True).stdout
@@ -134,7 +136,9 @@ def main():
         if elf.count(signature) != 1:
             sys.exit(f'signature at {address:#x} is not unique')
         lines.append((address, new, signature, 8))
-    lines.append((CODE, code, None, 0))
+    # The port's loader takes at most 4096 bytes per write (src/probe.c, "bad patch entry")
+    for at in range(0, len(code), MAX_WRITE):
+        lines.append((CODE + at, code[at:at + MAX_WRITE], None, 0))
 
     def line(va, value, signature, offset):
         sha = hashlib.sha256(read(elf, va, len(value))).hexdigest()
@@ -147,7 +151,7 @@ def main():
      Ghost sharing: shared ghosts (/data/ghosts/*.ctrghost) as extra entries in the Time Trial ghost
      menu, raced as extra ghosts that count for nothing; a button on your own ghost exports it.
      Every shared file is checked field by field before the game gets any of it; the game's own
-     ghost file loader never reads a shared file. The last line is the new code ({len(code)} bytes). -->
+     ghost file loader never reads a shared file. The last lines are the new code ({len(code)} bytes). -->
 <Patch>
   <TitleID><ID>CUSA13795</ID></TitleID>
   <Metadata Title="Crash Team Racing Nitro-Fueled" Name="Ghost Sharing"

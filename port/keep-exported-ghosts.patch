@@ -1,0 +1,15 @@
+--- scripts/mod_packages.py	2026-10-27 15:12:32.206214675 +0100
++++ scripts/mod_packages.py	2026-10-28 03:00:27.401337648 +0100
+@@ -67,6 +67,12 @@
+     session,state=ACTIVE
+     save_json(session/'result.json',{'exit_code':code})
+     if code==0:sync_saves(session/'user/savedata',state/'user/savedata',state/'save-backups')
++    # Ghosts exported in the game (Ghost Sharing patch) outlive the session copy of user/.
++    exported=session/'user/data/ghosts'
++    if exported.is_dir():
++        kept=state/'user/data/ghosts';kept.mkdir(parents=True,exist_ok=True)
++        for p in exported.glob('*.ctrghost'):
++            if p.is_file() and not p.is_symlink():shutil.copy2(p,kept/p.name)
+ 
+ def prepare(port,data,environment,game,config,prepare_only=False,log=print):
+     global ACTIVE
