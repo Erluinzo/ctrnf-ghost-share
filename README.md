@@ -8,23 +8,21 @@ For the USA game, CUSA13795 version 1.21, on the [OCTR port](https://github.com/
   ghost menu, under the challenge ghosts, with the sharer's name, their driver and their time. Select
   it like any other ghost; you can race several at once (up to 6 shared ghosts per track).
 - **Export your own ghost.** In the ghost menu, move to your own ghost (under "Player Ghost") and press
-  **R1**. The file `<track>_<time>_<your name>.ctrghost` appears in the ghosts folder. Send it to anyone.
+  **R1**. The file `<track>_<time>_<your name>.ctrghost` appears in the export folder (below). Send it to
+  anyone. Your ghost is kept in your save, so you can export it again at any time.
 - **It counts for nothing.** Beating a shared ghost does not unlock ghosts, give trophies or change
   stats. Your own time and ghost are saved as in any Time Trial race.
 
-## The ghosts folder
-| How you start the game | Folder |
-|---|---|
-| With mod packages enabled (any ZIP mod on the Mods page) | `mod-state/user/data/ghosts/` in the OCTR folder |
-| Without mod packages | `user/data/ghosts/` in the OCTR folder |
+## The folders
+| | With mod packages enabled (any ZIP mod on the Mods page) | Without mod packages |
+|---|---|---|
+| Received ghosts: put them here | `mod-state/user/data/ghosts/` | `user/data/ghosts/` |
+| Your exports appear here | `mod-state/user/savedata/1/CUSA13795/GhostShare/` | `user/savedata/1/CUSA13795/GhostShare/` |
 
-Put received `.ctrghost` files there, then open the ghost menu of that track.
-
-With mod packages enabled, the port runs the game on a copy of `mod-state/user` and copies back only
-the saves, so an exported ghost stays in that copy (`mod-state/sessions/<session>/user/data/ghosts/`,
-kept for the newest 3 sessions). The port change `port/keep-exported-ghosts.patch` copies exported
-ghosts back to `mod-state/user/data/ghosts/` when the game closes. Your own ghost is in your save, so
-you can always export it again.
+Paths are in the OCTR folder. Exports go to a save data folder of the patch's own, because saves are
+the only files the port keeps after a game with mod packages. The game never reads that folder: it
+opens its own saves by name. Put received files in place while the game is closed or before you open
+the ghost menu of that track.
 
 ## What a ghost carries
 Your name, driver, kart, time and the full recording of your driving line. The game draws ghosts as a
