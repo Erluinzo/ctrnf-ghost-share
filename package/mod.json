@@ -2,7 +2,7 @@
   "schemaVersion": 2,
   "id": "ghost-share",
   "name": "Ghost Sharing",
-  "version": "0.3.0",
+  "version": "1.0.0",
   "author": "Onur",
   "description": "Race other players' Time Trial ghosts and share your own. Press R1 on your ghost in the ghost menu to export it; ghosts you receive appear in the ghost menu with the sharer's name.",
   "requiresCapabilities": [
@@ -19,7 +19,7 @@
   "files": [
     {
       "file": "README.txt",
-      "sha256": "ab65cab1f64219853da8d9f5bd8c9d8000d9c0eea324c82d2d5e4d51396ca389",
+      "sha256": "2d3c8cd9067db286b7e6f72c7c0ce9882b450922bcb9dcc99c741114b840e99f",
       "bytes": 1796
     },
     {
@@ -29,7 +29,7 @@
     },
     {
       "file": "patches/GhostShare.xml",
-      "sha256": "67679fe88961b60244be3a22f79074cc599e5f74e4fc5b4b8348672ca0657b12",
+      "sha256": "ec24239f8608027e3f0f0072c27225c3af8a60a8d8d20a80cff57541d5f49805",
       "bytes": 33002
     }
   ]

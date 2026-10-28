@@ -1,4 +1,4 @@
-Ghost Sharing 0.3.0
+Ghost Sharing 1.0.0
 Author: Onur
 
 Race other players' Time Trial ghosts, and share your own.
