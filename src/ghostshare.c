@@ -184,7 +184,10 @@ void gs_fill_ghost_list(const char *level, void **list, void *widget)
 {
     game_fill_challenge_ghosts(level, list);
     forget_shared();
-    if (share_level_name(level, gs.level) != SHARE_OK) return;
+    char name[LEVEL_SIZE];
+    gs.level[0] = 0;    /* no export for a menu whose level we do not know */
+    if (!list || !*list || share_level_name(level, name) != SHARE_OK) return;
+    copy_text(gs.level, name, LEVEL_SIZE);
 
     int dir = sce_open(FOLDER, O_DIRECTORY, 0);
     if (dir < 0) return;
@@ -247,7 +250,7 @@ void gs_send_entry_setup(void *target, void *event, void *behavior)
 void gs_take_chosen(void *manager)
 {
     void *chosen = AT(manager, 0x50, void *);
-    for (int i = 0; i < gs.count; i++) {
+    for (int i = 0; chosen && i < gs.count; i++) {
         struct shared *s = &gs.shared[i];
         int count = AT(chosen, 0xc, int32_t);
         void **items = AT(chosen, 0x20, void **);
