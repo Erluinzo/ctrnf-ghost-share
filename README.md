@@ -23,8 +23,18 @@ Paths are in the OCTR folder. If you installed the ZIP on the Mods page, use the
 Exports go to a save data folder of the patch's own, because saves are the only files the port keeps
 after a game with mod packages. The game never reads that folder: it opens its own saves by name.
 
+**With mod packages, the exported file appears in that folder only after you close the game
+normally.** While the game runs, it writes its saves to a session folder, and the launcher copies
+them to `mod-state/user/savedata/` when the game closes. Without mod packages, the file is there at once.
+
+Can't find your file?
+- Close the game normally (not with a crash or by killing it), then look again.
+- After a crash, it is still in the session folder: the newest
+  `mod-state/sessions/<session>/user/savedata/1/CUSA13795/GhostShare/`.
+- Or export it again: your ghost stays in your save, so R1 on your ghost exports it again at any time.
+
 ## Install
-In the OCTR launcher: Mods > Add files, choose `ghost-share-1.0.0.zip` from the
+In the OCTR launcher: Mods > Add files, choose `ghost-share-1.0.1.zip` from the
 [releases](https://github.com/Erluinzo/ctrnf-ghost-share/releases), enable it, fully restart the game.
 
 ## Import a ghost
