@@ -524,15 +524,17 @@ static void show_export_result(int result)
         char folder[64] = "savedata/";
         add_text(folder, sizeof folder, number);
         add_text(folder, sizeof folder, "/" TITLE_ID "/GhostShare");
+        /* reviewed in English with the owner's localization passes: notes/l10n-export-message/ */
         add_text(body, sizeof body, gs.export_file);
-        add_text(body, sizeof body, "\n\nIn your OCTR folder, now: mod-state/sessions/(newest folder)/user/");
+        add_text(body, sizeof body, "\n\nIn your OCTR folder:\nNow: mod-state/sessions/(newest folder)/user/");
         add_text(body, sizeof body, folder);
-        add_text(body, sizeof body, "\nAfter you close the game normally: mod-state/user/");
+        add_text(body, sizeof body, "\nAfter closing the game: mod-state/user/");
         add_text(body, sizeof body, folder);
-        add_text(body, sizeof body, "\nWithout mod packages: user/");
+        add_text(body, sizeof body, "\nAfter a crash: only in the newest session folder.\nWithout mod packages: user/");
         add_text(body, sizeof body, folder);
-        add_text(body, sizeof body, "\n\nSend this file to anyone. They put it in mod-state/user/data/ghosts "
-                 "(without mod packages: user/data/ghosts) and choose your ghost in this track's ghost menu.");
+        add_text(body, sizeof body, "\n\nSend this file to anyone. They put it in their own OCTR folder, in "
+                 "mod-state/user/data/ghosts (or user/data/ghosts if they play without mod packages), and pick "
+                 "your ghost in this track's ghost menu.");
         show_popup("Ghost exported", body);
         return;
     }

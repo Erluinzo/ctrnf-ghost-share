@@ -5,19 +5,20 @@ Race other players' Time Trial ghosts, and share your own.
 
 SHARE YOUR GHOST
 In Time Trial, open the ghost menu of a track, move to your own ghost (under
-"Player Ghost") and press R1. A message shows the file name and where it is:
-  <OCTR folder>/mod-state/user/savedata/1/CUSA13795/GhostShare/
+"Player Ghost") and press R1. A message shows the file name and where it is.
 Send that .ctrghost file to anyone. Your ghost stays in your save, so you can
 export it again at any time.
 
-The file appears in that folder only when you close the game normally (the
-game writes to a session folder while it runs; the launcher copies it when the
-game closes). Without mod packages it is at once in:
+With mod packages (any ZIP mod enabled, like this one), the game runs in a
+session folder, so the file is ready at once in:
+  <OCTR folder>/mod-state/sessions/<newest folder>/user/savedata/1/CUSA13795/GhostShare/
+When you close the game normally, the launcher also copies it to:
+  <OCTR folder>/mod-state/user/savedata/1/CUSA13795/GhostShare/
+where it stays. After a crash it is only in that game's session folder (the
+newest one until you start the game again; the launcher deletes old session
+folders after a few launches). Without mod packages it is at once in:
   <OCTR folder>/user/savedata/1/CUSA13795/GhostShare/
-Can't find it? Close the game normally and look again. After a crash it is in
-the newest session folder:
-  <OCTR folder>/mod-state/sessions/<session>/user/savedata/1/CUSA13795/GhostShare/
-Or simply press R1 on your ghost again.
+Can't find it? Press R1 on your ghost again.
 EU edition: CUSA14876 instead of CUSA13795 in these folders (the message shows
 the right one).
 
@@ -62,5 +63,5 @@ UNINSTALL: disable or remove it. Your exported ghosts stay in their folder.
 
 CHANGES
 1.1.0: EU edition (CUSA14876) supported, as a second ZIP. The export message
-says the file appears when you close the game normally. This README has the
-import tips and where to look after a crash.
+shows where the file is at once (the session folder), after the game is closed,
+and after a crash. This README has the import tips.

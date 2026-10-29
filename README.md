@@ -17,20 +17,24 @@ For the game version 1.21, USA (CUSA13795) or EU (CUSA14876), on the [OCTR port]
 | | With mod packages enabled (any ZIP mod on the Mods page) | Without mod packages |
 |---|---|---|
 | Received ghosts: put them here | `mod-state/user/data/ghosts/` | `user/data/ghosts/` |
-| Your exports appear here | `mod-state/user/savedata/1/CUSA13795/GhostShare/` | `user/savedata/1/CUSA13795/GhostShare/` |
+| Your exports: right away (while the game runs) | `mod-state/sessions/<newest folder>/user/savedata/1/CUSA13795/GhostShare/` | `user/savedata/1/CUSA13795/GhostShare/` |
+| Your exports: after you close the game | `mod-state/user/savedata/1/CUSA13795/GhostShare/` | (same as above) |
 
 Paths are in the OCTR folder; on the EU edition, `CUSA14876` instead of `CUSA13795`. If you installed the ZIP on the Mods page, use the first column.
 Exports go to a save data folder of the patch's own, because saves are the only files the port keeps
 after a game with mod packages. The game never reads that folder: it opens its own saves by name.
 
-**With mod packages, the exported file appears in that folder only after you close the game
-normally.** While the game runs, it writes its saves to a session folder, and the launcher copies
-them to `mod-state/user/savedata/` when the game closes. Without mod packages, the file is there at once.
+**With mod packages, the game runs in a session folder:** every file it writes goes to the newest
+folder in `mod-state/sessions/`, and the launcher copies the saves to `mod-state/user/savedata/` only
+when the game closes normally. So your file is ready at once in the session folder, and after a normal
+close it is also in `mod-state/user/savedata/`, where it stays. The export message shows both places.
+After a crash, it is only in that game's session folder (the newest one until you start the game
+again; the launcher deletes old session folders after a few launches). Without mod packages, the file
+is in `user/savedata/` at once.
 
 Can't find your file?
-- Close the game normally (not with a crash or by killing it), then look again.
-- After a crash, it is still in the session folder: the newest
-  `mod-state/sessions/<session>/user/savedata/1/CUSA13795/GhostShare/`.
+- While the game runs: open the newest folder in `mod-state/sessions/` (sort by date).
+- After a crash: the session folder of that game, before you start the game a few more times.
 - Or export it again: your ghost stays in your save, so R1 on your ghost exports it again at any time.
 
 ## Install

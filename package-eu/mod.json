@@ -19,8 +19,8 @@
   "files": [
     {
       "file": "README.txt",
-      "sha256": "567da1217a523a2ff3662b1346ab9568ce769fc6eba7b0481543dcc8215716b4",
-      "bytes": 3311
+      "sha256": "46d6430519b79857559897d9104336353d4d7b08400506406ad1c90cc804f914",
+      "bytes": 3433
     },
     {
       "file": "octr-mod.required",
@@ -29,8 +29,8 @@
     },
     {
       "file": "patches/GhostShare-EU.xml",
-      "sha256": "c507fc1c58c531b9aeab26dccfec1f1f3491a0344e262793d716fb0547ce71bd",
-      "bytes": 33110
+      "sha256": "17d64b92491affe535eafb36a6ed1d304427414eb3ad16f012cda8543ff4b263",
+      "bytes": 31878
     }
   ]
 }
