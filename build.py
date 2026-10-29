@@ -124,7 +124,7 @@ def main():
     if read(elf, CODE, len(code)) != bytes(len(code)):
         sys.exit(f'{ELF}: the area at {CODE:#x} is not empty')
     data_end = 0x2a00000 + 0x1ee66d
-    if STATE < data_end or STATE + 0x900 > STATE_END:
+    if STATE < data_end or STATE + 0x400 > STATE_END - 0x500:   # 0x2beea80-0x2beef80: the ghost spectator's state
         sys.exit('state area is not in the free space after the game data')
 
     lines = []

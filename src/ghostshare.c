@@ -98,7 +98,7 @@ struct state {
 };
 enum { EXPORT_NONE, EXPORT_OK, EXPORT_NO_LEVEL, EXPORT_NO_GHOST, EXPORT_BAD_GHOST, EXPORT_OPEN_FAILED,
        EXPORT_WRITE_FAILED, EXPORT_MOUNT_FAILED };
-_Static_assert(sizeof(struct state) <= 0x900, "state must fit the free space after the game's data");
+_Static_assert(sizeof(struct state) <= 0x400, "state must fit 0x2bee680-0x2beea80 (the ghost spectator uses the rest)");
 extern struct state gs GAME;
 
 /* Field access on game objects */
