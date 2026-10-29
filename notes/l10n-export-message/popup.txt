@@ -1,0 +1,8 @@
+t111_crash_cove_1m21s99_Neox.ctrghost
+
+In your OCTR folder:
+Now: mod-state/sessions/(newest folder)/user/savedata/1/CUSA13795/GhostShare
+After closing the game (no crash): mod-state/user/savedata/1/CUSA13795/GhostShare
+Without mod packages: user/savedata/1/CUSA13795/GhostShare
+
+Send this file to anyone. They put it in mod-state/user/data/ghosts (without mod packages: user/data/ghosts) and choose your ghost in this track's ghost menu.
