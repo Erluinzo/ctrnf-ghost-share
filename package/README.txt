@@ -1,4 +1,4 @@
-Ghost Sharing 1.0.1
+Ghost Sharing 1.1.0
 Author: Onur
 
 Race other players' Time Trial ghosts, and share your own.
@@ -18,6 +18,8 @@ Can't find it? Close the game normally and look again. After a crash it is in
 the newest session folder:
   <OCTR folder>/mod-state/sessions/<session>/user/savedata/1/CUSA13795/GhostShare/
 Or simply press R1 on your ghost again.
+EU edition: CUSA14876 instead of CUSA13795 in these folders (the message shows
+the right one).
 
 RACE A SHARED GHOST
 1. Close the game first: it only sees files that were there when it started.
@@ -44,10 +46,21 @@ The patch checks every value first (size, names, track, numbers, times) and
 builds the ghost itself with the game's own functions. A file that fails any
 check is skipped.
 
-GAME: Crash Team Racing Nitro-Fueled, USA (CUSA13795) version 1.21, OCTR
-launcher with code-signature support. The launcher checks the game code before
-it applies the patch and refuses it on any other game build. The EU edition is
-not supported.
+GAME: Crash Team Racing Nitro-Fueled version 1.21, OCTR launcher with
+code-signature support. There is one ZIP per game edition:
+  ghost-share-<version>.zip      USA (CUSA13795)
+  ghost-share-eu-<version>.zip   EU (CUSA14876), shown as "Ghost Sharing (EU)"
+Use only the one for your game: with the other one enabled, the game does not
+start ("executable patch targets a different game edition/version"). The
+launcher checks the game code before it applies the patch. Ghost files are the
+same on both editions: USA and EU players can share ghosts.
 
-INSTALL: Mods > Add files, choose this ZIP, enable it, fully restart the game.
+INSTALL: Mods > Add files, choose the ZIP for your game, enable it, fully
+restart the game.
+UPDATE: add the new ZIP and remove the old one.
 UNINSTALL: disable or remove it. Your exported ghosts stay in their folder.
+
+CHANGES
+1.1.0: EU edition (CUSA14876) supported, as a second ZIP. The export message
+says the file appears when you close the game normally. This README has the
+import tips and where to look after a crash.

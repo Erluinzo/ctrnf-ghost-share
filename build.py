@@ -1,20 +1,21 @@
 #!/usr/bin/env python3
-"""Builds the ghost sharing patch, one XML per game edition (the launcher needs each XML to target
-one edition), and a switched-on test copy of each in the game's patches folder:
-  package/patches/GhostShare.xml        USA CUSA13795 1.21
-  package-eu/patches/GhostShare.xml     EU CUSA14876 1.21
+"""Builds the ghost sharing patch, one mod package per game edition (the launcher needs each
+package's XML to target one edition, and cannot pick between two ZIPs of one mod id), and a
+switched-on test copy of each XML in the game's patches folder:
+  package/patches/GhostShare.xml           USA CUSA13795 1.21
+  package-eu/patches/GhostShare-EU.xml     EU CUSA14876 1.21, with mod.json and README.txt made from package/
   python3 build.py
 
 Each edition's executable is only read: to check the original bytes at every write and to compute
 the ExpectedSHA256 values the launcher checks before it applies the patch. The EU addresses were
 found with ../CTRNF-Mods/tools/eu_map.py (same functions, moved by 0 to -0x40).
 """
-import hashlib, re, subprocess, sys, tempfile
+import hashlib, json, re, shutil, subprocess, sys, tempfile
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 GAME_DIR = HERE.parent / 'CTRNF'
-VERSION = '1.0.1'
+VERSION = '1.1.0'
 EBOOT_BASE = 0x400000       # patch XML addresses are ELF addresses + 0x400000
 
 CODE = 0x2320000            # unused zero padding at the end of the code segment (USA 0x2317810-0x233c078,
@@ -65,7 +66,7 @@ EDITIONS = {
             (0xf9b329, '8a053975af01', 'e8', 'hook_add_chosen', 1),         # race start, after them
         ]),
     'CUSA14876': dict(
-        name='EU', elf=GAME_DIR / 'orig/CUSA14876-eboot.elf', xml=HERE / 'package-eu/patches/GhostShare.xml',
+        name='EU', elf=GAME_DIR / 'orig/CUSA14876-eboot.elf', xml=HERE / 'package-eu/patches/GhostShare-EU.xml',
         test_copy=GAME_DIR / 'patches/GhostShare-EU.xml',
         game={
             'game_ghost_new': 0x10e1040, 'game_move_key_new': 0x10e0ca0, 'game_input_key_new': 0x10e0d70,
@@ -215,9 +216,20 @@ def build(title, e):
         print(f'test copy, switched on: {e["test_copy"]}')
 
 
+def eu_package():
+    """package-eu/ gets the USA package's README and manifest, with its own id and name"""
+    manifest = json.loads((HERE / 'package/mod.json').read_text())
+    assert manifest['version'] == VERSION, 'package/mod.json has another version'
+    manifest.update(id=manifest['id'] + '-eu', name=manifest['name'] + ' (EU)',
+                    patches=['patches/GhostShare-EU.xml'], files=[])
+    (HERE / 'package-eu/mod.json').write_text(json.dumps(manifest, indent=2) + '\n')
+    shutil.copy(HERE / 'package/README.txt', HERE / 'package-eu/README.txt')
+
+
 def main():
     for title, e in EDITIONS.items():
         build(title, e)
+    eu_package()
 
 
 if __name__ == '__main__':

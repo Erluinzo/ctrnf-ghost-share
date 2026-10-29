@@ -1,7 +1,7 @@
 # Ghost Sharing (CTR Nitro-Fueled, OCTR PC port)
 
 A game patch by Onur: race other players' Time Trial ghosts, and share your own.
-For the USA game, CUSA13795 version 1.21, on the [OCTR port](https://github.com/Ryu7w7/OCTR-NitroFueled-PC).
+For the game version 1.21, USA (CUSA13795) or EU (CUSA14876), on the [OCTR port](https://github.com/Ryu7w7/OCTR-NitroFueled-PC).
 
 ## What it does
 - **Shared ghosts in the ghost menu.** Every shared ghost file for the track appears in the Time Trial
@@ -19,7 +19,7 @@ For the USA game, CUSA13795 version 1.21, on the [OCTR port](https://github.com/
 | Received ghosts: put them here | `mod-state/user/data/ghosts/` | `user/data/ghosts/` |
 | Your exports appear here | `mod-state/user/savedata/1/CUSA13795/GhostShare/` | `user/savedata/1/CUSA13795/GhostShare/` |
 
-Paths are in the OCTR folder. If you installed the ZIP on the Mods page, use the first column.
+Paths are in the OCTR folder; on the EU edition, `CUSA14876` instead of `CUSA13795`. If you installed the ZIP on the Mods page, use the first column.
 Exports go to a save data folder of the patch's own, because saves are the only files the port keeps
 after a game with mod packages. The game never reads that folder: it opens its own saves by name.
 
@@ -34,8 +34,12 @@ Can't find your file?
 - Or export it again: your ghost stays in your save, so R1 on your ghost exports it again at any time.
 
 ## Install
-In the OCTR launcher: Mods > Add files, choose `ghost-share-1.0.1.zip` from the
-[releases](https://github.com/Erluinzo/ctrnf-ghost-share/releases), enable it, fully restart the game.
+Download the ZIP for your game from the [releases](https://github.com/Erluinzo/ctrnf-ghost-share/releases):
+`ghost-share-<version>.zip` for USA (CUSA13795), `ghost-share-eu-<version>.zip` for EU (CUSA14876).
+In the OCTR launcher: Mods > Add files, choose it, enable it, fully restart the game. To update, add the
+new ZIP and remove the old one. Use only the ZIP for your game: with the other one enabled, the game does
+not start ("executable patch targets a different game edition/version"). Ghost files are the same on both
+editions, so USA and EU players can share ghosts.
 
 ## Import a ghost
 1. Close the game. With mod packages, the game only sees files that were there when it started.
@@ -66,11 +70,12 @@ Ghost files come from other people, so the patch never lets the game read them d
   (`tools/ctrghost.py`) on every file; fuzzed with libFuzzer.
 
 ## Building (developers)
-Needs the OCTR checkout at `../CTRNF` (with `out/eboot.elf` from a build), gcc, clang, binutils,
+Needs the OCTR checkout at `../CTRNF` (with `out/eboot.elf` from a USA build, and the EU executable at
+`orig/CUSA14876-eboot.elf`), gcc, clang, binutils,
 `pip install capstone unicorn`.
 
 ```sh
-python3 build.py              # writes package/patches/GhostShare.xml (+ a switched-on copy in ../CTRNF/patches)
+python3 build.py              # writes package/ (USA) and package-eu/ (EU) (+ switched-on copies in ../CTRNF/patches)
 python3 tests/run_tests.py    # PC tests; add --fuzz 120 for a 2-minute fuzz run
 python3 tools/peek.py         # state of the patch in the running game (Linux)
 ```
