@@ -1,4 +1,4 @@
-# Entry points the patched game code jumps or calls into (USA CUSA13795 1.21, ELF addresses).
+# Entry points the patched game code jumps or calls into (1.21; addresses in comments are USA ELF addresses).
 # Game addresses are symbols set by build.py; all references are RIP-relative.
 
     .intel_syntax noprefix

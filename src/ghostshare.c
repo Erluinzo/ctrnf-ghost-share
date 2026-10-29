@@ -1,4 +1,4 @@
-/* Ghost sharing: runs inside the game (USA CUSA13795 1.21), called from the hooks in hooks.s.
+/* Ghost sharing: runs inside the game (CTR Nitro-Fueled 1.21, USA CUSA13795 or EU CUSA14876), called from the hooks in hooks.s.
  *
  * - Ghost menu: shared ghosts for this track (files in /data/ghosts) are added as challenge-ghost
  *   entries that show the sharer's name.
@@ -69,7 +69,8 @@ extern const char game_list_vtable[] GAME;                                  /* i
 #define O_DIRECTORY 0x20000
 
 #define FOLDER "/data/ghosts"
-/* Save data folder for exports: <user>/savedata/<user id>/CUSA13795/GhostShare. The game opens
+/* Save data folder for exports: <user>/savedata/<user id>/<TITLE_ID>/GhostShare (TITLE_ID, the
+ * game edition, is set by build.py). The game opens
  * its own saves by exact name (savedata0, savedata1), so it never reads this one. */
 #define EXPORT_DIR "GhostShare"
 #define MOUNT_RDWR_CREATE 0x22   /* RDWR | CREATE2 (create if missing) */
@@ -522,7 +523,7 @@ static void show_export_result(int result)
         add_text(body, sizeof body, "\n\nIt appears when you close the game normally, in your OCTR folder: "
                  "mod-state/user/savedata/");
         add_text(body, sizeof body, number);
-        add_text(body, sizeof body, "/CUSA13795/GhostShare (without mod packages: user/savedata/..., at once)."
+        add_text(body, sizeof body, "/" TITLE_ID "/GhostShare (without mod packages: user/savedata/..., at once)."
                  "\n\nSend this file to anyone. They put it in mod-state/user/data/ghosts "
                  "(without mod packages: user/data/ghosts) and choose your ghost in this track's ghost menu.");
         show_popup("Ghost exported", body);
