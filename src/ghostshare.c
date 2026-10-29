@@ -517,14 +517,21 @@ static void show_export_result(int result)
             n++;
         for (int i = n - 1, u = user < 0 ? 0 : user; i >= 0; i--, u /= 10)
             number[i] = (char)('0' + u % 10);
+        /* With mod packages the game runs in a session folder (mod-state/sessions/<id>/user), which the
+         * launcher copies to mod-state/user/savedata only when the game closes normally
+         * (scripts/mod_packages.py finish), and deletes after a few launches. Every folder the game
+         * can write to is inside it, so the file is there at once, and nowhere else until then. */
+        char folder[64] = "savedata/";
+        add_text(folder, sizeof folder, number);
+        add_text(folder, sizeof folder, "/" TITLE_ID "/GhostShare");
         add_text(body, sizeof body, gs.export_file);
-        /* With mod packages the game writes to a session folder, which the launcher copies to
-         * mod-state/user/savedata only when the game closes normally (scripts/mod_packages.py finish) */
-        add_text(body, sizeof body, "\n\nIt appears when you close the game normally, in your OCTR folder: "
-                 "mod-state/user/savedata/");
-        add_text(body, sizeof body, number);
-        add_text(body, sizeof body, "/" TITLE_ID "/GhostShare (without mod packages: user/savedata/..., at once)."
-                 "\n\nSend this file to anyone. They put it in mod-state/user/data/ghosts "
+        add_text(body, sizeof body, "\n\nIn your OCTR folder, now: mod-state/sessions/(newest folder)/user/");
+        add_text(body, sizeof body, folder);
+        add_text(body, sizeof body, "\nAfter you close the game normally: mod-state/user/");
+        add_text(body, sizeof body, folder);
+        add_text(body, sizeof body, "\nWithout mod packages: user/");
+        add_text(body, sizeof body, folder);
+        add_text(body, sizeof body, "\n\nSend this file to anyone. They put it in mod-state/user/data/ghosts "
                  "(without mod packages: user/data/ghosts) and choose your ghost in this track's ghost menu.");
         show_popup("Ghost exported", body);
         return;
