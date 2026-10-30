@@ -19,8 +19,8 @@
   "files": [
     {
       "file": "README.txt",
-      "sha256": "46d6430519b79857559897d9104336353d4d7b08400506406ad1c90cc804f914",
-      "bytes": 3433
+      "sha256": "c449fc12517e788c8ade7e5096be1ba5d22893ec3a4e871b63320915f80a936a",
+      "bytes": 768
     },
     {
       "file": "octr-mod.required",
