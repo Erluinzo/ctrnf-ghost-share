@@ -96,10 +96,11 @@ struct state {
     int last_signal;        /* last button signal on a ghost entry, other than Select */
     int export_result;      /* EXPORT_* of the last export */
     char export_file[64];   /* file name of the last export */
+    int race_data;          /* 1: the last export also wrote the run's race data (.crr) */
 };
 enum { EXPORT_NONE, EXPORT_OK, EXPORT_NO_LEVEL, EXPORT_NO_GHOST, EXPORT_BAD_GHOST, EXPORT_OPEN_FAILED,
        EXPORT_WRITE_FAILED, EXPORT_MOUNT_FAILED };
-_Static_assert(sizeof(struct state) <= 0x400, "state must fit 0x2bee680-0x2beea80 (the ghost spectator uses the rest)");
+_Static_assert(sizeof(struct state) <= 0x3f0, "state must fit 0x2bee680-0x2beea80 (the ghost spectator uses the rest)");
 extern struct state gs GAME;
 
 /* Field access on game objects */
@@ -395,6 +396,74 @@ static void export_name(char *out, int size, const struct share_header *h)
     copy_text(out + n, ".ctrghost", size - n);
 }
 
+/* The full race data of the run (a Replay Mode recording, if that mod is used): a ".crr" file in the RaceReplay
+ * save folder of a Time Trial of this level whose player's time is the ghost's. Its header (Replay Mode
+ * src/replay.h): "CTRRPLAY", +0x20 mode (2 = Time Trial), +0x28 level[64], +0x90 8 racers of 116 bytes
+ * (+0x61 kind, 1 = local; +0x62 finished place; +0x70 finish time). Copied next to the exported ghost with the
+ * same name and ".crr": with Replay Mode, the receiver can watch the exact race. The ghost file itself is not
+ * changed, so it works as before, with or without that mod. 1 = copied. */
+static int copy_race_data(const char *to, const struct share_header *ghost)
+{
+    struct { int32_t user, pad; const char *dir; uint64_t blocks; uint32_t mode; uint8_t reserved[36]; } mount;
+    struct { char point[16]; uint8_t rest[48]; } result;
+    char dir[16] = "RaceReplay", path[96], buffer[2048];
+    __builtin_memset(&mount, 0, sizeof mount);
+    __builtin_memset(&result, 0, sizeof result);
+    if (sce_initial_user(&mount.user) < 0) return 0;
+    mount.dir = dir;
+    mount.blocks = MOUNT_BLOCKS;
+    mount.mode = 1;                                     /* read only */
+    if (sce_save_mount2(&mount, &result) < 0) return 0;
+    result.point[15] = 0;
+    int folder = sce_open(result.point, O_DIRECTORY, 0), found = -1;
+    int64_t n;
+    while (folder >= 0 && found < 0 && (n = sce_getdents(folder, buffer, sizeof buffer)) > 0 && n <= (int64_t)sizeof buffer)
+        for (int64_t at = 0; at + 8 <= n && found < 0;) {
+            uint16_t length = AT(buffer + at, 4, uint16_t);
+            uint8_t name_length = AT(buffer + at, 7, uint8_t);
+            if (length < 8 || at + length > n || 8 + name_length > length || name_length > 60) break;
+            copy_text(path, result.point, sizeof path);
+            int p = 0;
+            while (path[p]) p++;
+            path[p++] = '/';
+            for (int i = 0; i < name_length; i++) path[p++] = buffer[at + 8 + i];
+            path[p] = 0;
+            at += length;
+            if (p < 5 || !same_text(path + p - 4, ".crr")) continue;
+            uint8_t h[0x90 + 8 * 116];
+            int fd = sce_open(path, 0, 0);
+            if (fd < 0) continue;
+            int ok = sce_pread(fd, h, sizeof h, 0) == (int64_t)sizeof h && !__builtin_memcmp(h, "CTRRPLAY", 8) && AT(h, 0x20, int32_t) == 2;
+            h[0x28 + 63] = 0;
+            ok = ok && same_text((const char *)h + 0x28, ghost->level);
+            for (int r = 0; ok && r < 8; r++) {
+                float t = AT(h, 0x90 + 116 * r + 0x70, float) - ghost->time;
+                if (h[0x90 + 116 * r + 0x61] == 1 && h[0x90 + 116 * r + 0x62] && t > -0.006f && t < 0.006f) found = fd;
+            }
+            if (found < 0) sce_close(fd);
+        }
+    if (folder >= 0) sce_close(folder);
+    int copied = 0;
+    if (found >= 0) {
+        int out = sce_open(to, O_WRITE_NEW, 0666);
+        copied = out >= 0;
+        for (int64_t at = 0; copied;) {
+            n = sce_pread(found, buffer, sizeof buffer, at);
+            if (n <= 0) {
+                copied = n == 0;
+                break;
+            }
+            copied = sce_pwrite(out, buffer, n, at) == n;
+            at += n;
+        }
+        if (out >= 0) sce_close(out);
+        if (!copied && out >= 0) sce_unlink(to);
+        sce_close(found);
+    }
+    sce_save_umount(result.point);
+    return copied;
+}
+
 /* Writes your saved ghost of the menu's level to the export save folder. Returns EXPORT_*. */
 static int export_own_ghost(void)
 {
@@ -475,6 +544,14 @@ static int export_own_ghost(void)
     }
     sce_close(fd);
     if (!ok) sce_unlink(path);
+    /* the run's full race data next to it, when there is one ("..._Neox.crr") */
+    int dot = 0;
+    while (path[dot]) dot++;
+    while (dot && path[dot] != '.') dot--;
+    if (ok && dot) {
+        copy_text(path + dot, ".crr", sizeof path - dot);
+        gs.race_data = copy_race_data(path, &h);
+    }
     sce_save_umount(result.point);
     if (ok) copy_text(gs.export_file, file, sizeof gs.export_file);
     return ok ? EXPORT_OK : EXPORT_WRITE_FAILED;
@@ -532,6 +609,7 @@ static void show_export_result(int result)
         add_text(body, sizeof body, folder);
         add_text(body, sizeof body, "\nAfter a crash: only in the newest session folder.\nWithout mod packages: user/");
         add_text(body, sizeof body, folder);
+        if (gs.race_data) add_text(body, sizeof body, "\n\nWith it: the same name with .crr, the full race (for Replay Mode).");
         add_text(body, sizeof body, "\n\nSend this file to anyone. They put it in their own OCTR folder, in "
                  "mod-state/user/data/ghosts (or user/data/ghosts if they play without mod packages), and pick "
                  "your ghost in this track's ghost menu.");

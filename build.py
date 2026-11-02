@@ -15,7 +15,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 GAME_DIR = HERE.parent / 'CTRNF'
-VERSION = '1.1.0'
+VERSION = '1.2.0'
 EBOOT_BASE = 0x400000       # patch XML addresses are ELF addresses + 0x400000
 
 CODE = 0x2320000            # unused zero padding at the end of the code segment (USA 0x2317810-0x233c078,

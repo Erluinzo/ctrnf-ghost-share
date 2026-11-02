@@ -5,6 +5,7 @@ Race other players' Time Trial ghosts and share your own, in CTR Nitro-Fueled ([
 - **Share:** in the Time Trial ghost menu, press **R1** on your own ghost. A message shows the file and its folder.
 - **Race one:** close the game, put the `.ctrghost` file (keep its name) in `mod-state/user/data/ghosts/`
   in your OCTR folder (create it if needed). It appears in that track's ghost menu with the sharer's name.
+- **Full race:** with [Replay Mode](https://github.com/Erluinzo/ctrnf-replay-mode), the export also writes a `.crr` file of the same run (Replay Mode keeps every Time Trial personal best). Put it in the `RaceReplay` folder to watch the exact race; [Ghost Viewer](https://github.com/Erluinzo/ctrnf-time-trial-replay) then also plays the ghost exactly. The `.ctrghost` file is unchanged and works without it, and your ghost in the game's save is never changed.
 
 Shared ghosts unlock nothing. USA and EU players can share ghosts. Files are fully checked before use.
 
