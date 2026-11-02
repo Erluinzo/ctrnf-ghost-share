@@ -8,7 +8,7 @@
   <TitleID><ID>CUSA14876</ID></TitleID>
   <Metadata Title="Crash Team Racing Nitro-Fueled" Name="Ghost Sharing"
             Note="Race other players' shared ghosts (folder data/ghosts) and export your own from the ghost menu."
-            Author="Onur" PatchVer="1.2.0" AppVer="01.21" AppElf="eboot.bin">
+            Author="Onur" PatchVer="1.2.1" AppVer="01.21" AppElf="eboot.bin">
     <PatchList>
       <Line Type="bytes" Address="0x00de2756" Value="e8a60e9401" Signature="b8 48 8b bd 78 ff ff ff e8 55 c3 5e 00 4c 89 f7 e8 ed aa ab 00" SignatureOffset="0x8" ExpectedSHA256="cbcf60c296e81eced21079afbdad540624dab2dd4222f2258519369ef6c7dab1" />
       <Line Type="bytes" Address="0x00de2d22" Value="e8da089401" Signature="78 ff ff ff 48 8d 75 b8 e8 89 bd 5e 00 e9 37 fa ff ff 31 c0 e9" SignatureOffset="0x8" ExpectedSHA256="9e6e51260e70cb8f36dff263785ef0f6b4708fb044e93799ec712960a9fb95ed" />

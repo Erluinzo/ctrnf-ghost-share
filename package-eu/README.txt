@@ -1,4 +1,4 @@
-Ghost Sharing 1.2.0 - by Onur
+Ghost Sharing 1.2.1 - by Onur
 
 Race other players' Time Trial ghosts and share your own.
 
