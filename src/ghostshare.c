@@ -1,6 +1,6 @@
 /* Ghost sharing: runs inside the game (CTR Nitro-Fueled 1.21, USA CUSA13795 or EU CUSA14876), called from the hooks in hooks.s.
  *
- * - Ghost menu: shared ghosts for this track (files in /data/ghosts) are added as challenge-ghost
+ * - Ghost menu: shared ghosts for this track (files in /data/ghosts, or in EXPORT_DIR/received) are added as challenge-ghost
  *   entries that show the sharer's name.
  * - Race start: chosen shared ghosts are taken out of the game's own selection list, so the game's
  *   file loader and its unlock rules never see them. Each file is then read again, checked value by
@@ -51,6 +51,7 @@ extern int sce_close(int fd) GAME;
 extern int sce_fstat(int fd, void *stat) GAME;
 extern int64_t sce_getdents(int fd, char *buffer, uint64_t size) GAME;
 extern int sce_unlink(const char *path) GAME;
+extern int sce_mkdir(const char *path, int mode) GAME;
 extern int sce_initial_user(int *user) GAME;
 extern int sce_user_name(int user, char *name, uint64_t size) GAME;
 extern int sce_save_mount2(const void *mount, void *result) GAME;
@@ -73,6 +74,9 @@ extern const char game_list_vtable[] GAME;                                  /* i
  * game edition, is set by build.py). The game opens
  * its own saves by exact name (savedata0, savedata1), so it never reads this one. */
 #define EXPORT_DIR "GhostShare"
+/* Shared ghosts can also go in EXPORT_DIR/received (see copy_received) */
+#define RECEIVED "received"
+#define MAX_FILE (sizeof(struct share_header) + MAX_MOVES * sizeof(struct share_move) + MAX_INPUTS * sizeof(struct share_input))
 #define MOUNT_RDWR_CREATE 0x22   /* RDWR | CREATE2 (create if missing) */
 #define MOUNT_BLOCKS 0x60        /* the smallest size the game asks for its own saves */
 #define LEGEND_R1 6              /* EButtonLegendButton; must match EXPORT_SIGNAL */
@@ -196,6 +200,69 @@ static void let_list_scroll(void *widget)
     AT(widget, 0x4c, float) = LIST_BOTTOM_MARGIN;
 }
 
+/* OCTR v0.8 and newer give a game with mod packages an empty /data at each start; only the saves are the
+ * player's own. So shared ghosts can also be put in EXPORT_DIR/received (in the player's save folder) and are
+ * copied from there to FOLDER, where the menu and the race start read and check them as before. A file
+ * already in FOLDER is left as it is. */
+__attribute__((noinline, section(".more"))) static void copy_received(void)
+{
+    struct { int32_t user, pad; const char *dir; uint64_t blocks; uint32_t mode; uint8_t reserved[36]; } mount;
+    struct { char point[16]; uint8_t rest[48]; } result;
+    char dir[32] = EXPORT_DIR, from[96], to[sizeof FOLDER + 64], names[2048], buffer[2048];
+    __builtin_memset(&mount, 0, sizeof mount);
+    __builtin_memset(&result, 0, sizeof result);
+    if (sce_initial_user(&mount.user) < 0) return;
+    mount.dir = dir;
+    mount.blocks = MOUNT_BLOCKS;
+    mount.mode = 1;                                     /* read only: makes no folder for players who never export */
+    if (sce_save_mount2(&mount, &result) < 0) return;
+    result.point[15] = 0;
+    copy_text(from, result.point, sizeof from);
+    int base = 0;
+    while (from[base]) base++;
+    copy_text(from + base, "/" RECEIVED, sizeof from - base);
+    int folder = sce_open(from, O_DIRECTORY, 0);
+    if (folder >= 0) sce_mkdir(FOLDER, 0777);           /* fails when it is there already */
+    int64_t n;
+    while (folder >= 0 && (n = sce_getdents(folder, names, sizeof names)) > 0 && n <= (int64_t)sizeof names)
+        for (int64_t at = 0; at + 8 <= n;) {
+            /* Each record: u32 id, u16 record length, u8 type, u8 name length, name at +8 */
+            uint16_t length = AT(names + at, 4, uint16_t);
+            uint8_t name_length = AT(names + at, 7, uint8_t);
+            if (length < 8 || at + length > n || 8 + name_length > length) break;
+            const char *name = names + at + 8;
+            at += length;
+            if (!share_file_name_ok(name, name_length)) continue;
+            int f = base + sizeof "/" RECEIVED;          /* "<point>/received/<name>" */
+            from[f - 1] = '/';
+            copy_text(to, FOLDER "/", sizeof to);
+            for (int i = 0; i < name_length; i++) {
+                from[f + i] = name[i];
+                to[sizeof FOLDER + i] = name[i];
+            }
+            from[f + name_length] = to[sizeof FOLDER + name_length] = 0;
+            int out = sce_open(to, O_READ, 0);
+            if (out >= 0) {
+                sce_close(out);
+                continue;
+            }
+            int in = sce_open(from, O_READ, 0);
+            if (in < 0) continue;
+            int64_t size = file_size(in);
+            out = size > 0 && size <= (int64_t)MAX_FILE ? sce_open(to, O_WRITE_NEW, 0666) : -1;
+            int ok = out >= 0;
+            for (int64_t done = 0, got; ok && done < size; done += got) {
+                got = sce_pread(in, buffer, sizeof buffer, done);
+                ok = got > 0 && sce_pwrite(out, buffer, got, done) == got;
+            }
+            sce_close(in);
+            if (out >= 0) sce_close(out);
+            if (out >= 0 && !ok) sce_unlink(to);
+        }
+    if (folder >= 0) sce_close(folder);
+    sce_save_umount(result.point);
+}
+
 /* Called instead of the game's "add challenge ghosts" step when the ghost menu is filled
  * (widget: the menu's igGuiList, from hooks.s). */
 void gs_fill_ghost_list(const char *level, void **list, void *widget)
@@ -207,6 +274,7 @@ void gs_fill_ghost_list(const char *level, void **list, void *widget)
     if (!list || !*list || share_level_name(level, name) != SHARE_OK) return;
     copy_text(gs.level, name, LEVEL_SIZE);
 
+    copy_received();
     int dir = sce_open(FOLDER, O_DIRECTORY, 0);
     if (dir < 0) return;
     char buffer[2048];
@@ -582,7 +650,7 @@ static void show_popup(const char *title_text, const char *body_text)
 }
 
 /* Tells the player where the exported file is and how to share it, or why there is none */
-static void show_export_result(int result)
+__attribute__((noinline, section(".more"))) static void show_export_result(int result)
 {
     char body[600] = {0};
     if (result == EXPORT_OK) {
@@ -594,25 +662,17 @@ static void show_export_result(int result)
             n++;
         for (int i = n - 1, u = user < 0 ? 0 : user; i >= 0; i--, u /= 10)
             number[i] = (char)('0' + u % 10);
-        /* With mod packages the game runs in a session folder (mod-state/sessions/<id>/user), which the
-         * launcher copies to mod-state/user/savedata only when the game closes normally
-         * (scripts/mod_packages.py finish), and deletes after a few launches. Every folder the game
-         * can write to is inside it, so the file is there at once, and nowhere else until then. */
+        /* OCTR v0.8 and newer keep saves in the player's own user folder, with or without mod packages
+         * (BB_PROGRESS_DIR), and write them at once: the file is there now. */
         char folder[64] = "savedata/";
         add_text(folder, sizeof folder, number);
         add_text(folder, sizeof folder, "/" TITLE_ID "/GhostShare");
-        /* reviewed in English with the owner's localization passes: notes/l10n-export-message/ */
         add_text(body, sizeof body, gs.export_file);
-        add_text(body, sizeof body, "\n\nIn your OCTR folder:\nNow: mod-state/sessions/(newest folder)/user/");
-        add_text(body, sizeof body, folder);
-        add_text(body, sizeof body, "\nAfter closing the game: mod-state/user/");
-        add_text(body, sizeof body, folder);
-        add_text(body, sizeof body, "\nAfter a crash: only in the newest session folder.\nWithout mod packages: user/");
+        add_text(body, sizeof body, "\n\nIn your OCTR folder: user/");
         add_text(body, sizeof body, folder);
         if (gs.race_data) add_text(body, sizeof body, "\n\nWith it: the same name with .crr, the full race (for Replay Mode).");
-        add_text(body, sizeof body, "\n\nSend this file to anyone. They put it in their own OCTR folder, in "
-                 "mod-state/user/data/ghosts (or user/data/ghosts if they play without mod packages), and pick "
-                 "your ghost in this track's ghost menu.");
+        add_text(body, sizeof body, "\n\nSend this file to anyone. They put it in their own GhostShare folder, in a folder "
+                 "named " RECEIVED " (they create it), and pick your ghost in this track's ghost menu.");
         show_popup("Ghost exported", body);
         return;
     }

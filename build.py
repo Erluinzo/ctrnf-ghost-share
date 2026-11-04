@@ -8,19 +8,21 @@ switched-on test copy of each XML in the game's patches folder:
 
 Each edition's executable is only read: to check the original bytes at every write and to compute
 the ExpectedSHA256 values the launcher checks before it applies the patch. The EU addresses were
-found with ../CTRNF-Mods/tools/eu_map.py (same functions, moved by 0 to -0x40).
+found with ../CTRNF-Tools/tools/eu_map.py (same functions, moved by 0 to -0x40).
 """
 import hashlib, json, re, shutil, subprocess, sys, tempfile
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 GAME_DIR = HERE.parent / 'CTRNF'
-VERSION = '1.2.1'
+VERSION = '1.2.2'
 EBOOT_BASE = 0x400000       # patch XML addresses are ELF addresses + 0x400000
 
 CODE = 0x2320000            # unused zero padding at the end of the code segment (USA 0x2317810-0x233c078,
                             # EU 0x23177d0-0x233c038)
-CODE_END = 0x2338000        # the Time Trial patch starts here; tomtotom's drift gauge ends at 0x23192df
+CODE_END = 0x2324000        # Ghost Viewer's code starts here; tomtotom's drift gauge ends at 0x23192df
+MORE = 0x231b000            # functions in section .more: free space after Input Display's code (0x231a000-0x231aa58)
+MORE_END = 0x231c000        # Replay Mode's code starts here
 STATE = 0x2bee680           # after the game's data (ends 0x2bee66d), before the page end 0x2bef000
 STATE_END = 0x2bef000
 MAX_WRITE = 4096
@@ -49,7 +51,7 @@ EDITIONS = {
             # PS4 import stubs
             'sce_open': 0x1beab78, 'sce_pread': 0x1bea7b8, 'sce_pwrite': 0x1bea868, 'sce_close': 0x1beaa38,
             'sce_fstat': 0x1beac08, 'sce_getdents': 0x1beaa18,
-            'sce_unlink': 0x1beaab8, 'sce_initial_user': 0x1be8df8, 'sce_user_name': 0x1bea528,
+            'sce_unlink': 0x1beaab8, 'sce_mkdir': 0x1beaad8, 'sce_initial_user': 0x1be8df8, 'sce_user_name': 0x1bea528,
             'sce_save_mount2': 0x1beaa68, 'sce_save_umount': 0x1bea988,
             # data
             'g_string_pool': 0x2af2600, 'g_racer_manager': 0x2ad4b70, 'g_zone_system': 0x2ae3c18, 'g_gui_manager': 0x2ac0dc0,
@@ -81,7 +83,7 @@ EDITIONS = {
             # PS4 import stubs
             'sce_open': 0x1beab58, 'sce_pread': 0x1bea798, 'sce_pwrite': 0x1bea848, 'sce_close': 0x1beaa18,
             'sce_fstat': 0x1beabe8, 'sce_getdents': 0x1bea9f8,
-            'sce_unlink': 0x1beaa98, 'sce_initial_user': 0x1be8dd8, 'sce_user_name': 0x1bea508,
+            'sce_unlink': 0x1beaa98, 'sce_mkdir': 0x1beaab8, 'sce_initial_user': 0x1be8dd8, 'sce_user_name': 0x1bea508,
             'sce_save_mount2': 0x1beaa48, 'sce_save_umount': 0x1bea968,
             # data
             'g_string_pool': 0x2af2600, 'g_racer_manager': 0x2ad4b70, 'g_zone_system': 0x2ae3c18, 'g_gui_manager': 0x2ac0dc0,
@@ -108,6 +110,7 @@ RELATIVE = {'R_X86_64_PC32', 'R_X86_64_PLT32'}
 LINKER_SCRIPT = '''SECTIONS {
   . = %#x;
   .text : { *(.text .text.*) *(.rodata .rodata.*) }
+  .more %#x : { *(.more) }
   /DISCARD/ : { *(.comment) *(.note*) *(.eh_frame*) }
 }
 '''
@@ -137,32 +140,34 @@ def build_code(tmp, title, game):
         if kinds - RELATIVE:
             sys.exit(f'{obj.name}: not RIP-relative: {sorted(kinds - RELATIVE)}')
     script = tmp / 'link.ld'
-    script.write_text(LINKER_SCRIPT % CODE)
+    script.write_text(LINKER_SCRIPT % (CODE, MORE))
     linked = tmp / 'patch.elf'
     run('ld', '-T', script, '-o', linked, '-e', 'gs_fill_ghost_list',
         *[f'--defsym={name}={address:#x}' for name, address in game.items()], *objects)
     sections = subprocess.run(['readelf', '-SW', linked], capture_output=True, text=True, check=True).stdout
     # [Nr] Name Type Address Off Size ES Flg ...: only .text may take space in memory
     for name, size, flags in re.findall(r'\[\s*\d+\]\s+(\S+)\s+\S+\s+[0-9a-f]+\s+[0-9a-f]+\s+([0-9a-f]+)\s+[0-9a-f]+\s+(\S*)', sections):
-        if 'A' in flags and name != '.text' and int(size, 16):
+        if 'A' in flags and name not in ('.text', '.more') and int(size, 16):
             sys.exit(f'unexpected section {name}: the code segment cannot hold writable data')
     symbols = {}
     for line in subprocess.run(['nm', linked], capture_output=True, text=True, check=True).stdout.splitlines():
         address, _, name = line.split()
         symbols[name] = int(address, 16)
-    binary = tmp / 'patch.bin'
+    binary, more = tmp / 'patch.bin', tmp / 'more.bin'
     run('objcopy', '-O', 'binary', '-j', '.text', linked, binary)
-    return binary.read_bytes(), symbols
+    run('objcopy', '-O', 'binary', '-j', '.more', linked, more)
+    return binary.read_bytes(), more.read_bytes(), symbols
 
 
 def build(title, e):
     elf = e['elf'].read_bytes()
     with tempfile.TemporaryDirectory() as tmp:
-        code, symbols = build_code(Path(tmp), title, e['game'])
-    if CODE + len(code) > CODE_END:
-        sys.exit(f'code is {len(code)} bytes: does not fit before {CODE_END:#x}')
-    if read(elf, CODE, len(code)) != bytes(len(code)):
-        sys.exit(f'{e["elf"]}: the area at {CODE:#x} is not empty')
+        code, more, symbols = build_code(Path(tmp), title, e['game'])
+    for start, end, part in ((CODE, CODE_END, code), (MORE, MORE_END, more)):
+        if start + len(part) > end:
+            sys.exit(f'code is {len(part)} bytes: does not fit before {end:#x}')
+        if read(elf, start, len(part)) != bytes(len(part)):
+            sys.exit(f'{e["elf"]}: the area at {start:#x} is not empty')
     data_end = 0x2a00000 + 0x1ee66d
     if STATE < data_end or STATE + 0x400 > STATE_END - 0x500:   # 0x2beea80-0x2beef80: the ghost spectator's state
         sys.exit('state area is not in the free space after the game data')
@@ -181,8 +186,9 @@ def build(title, e):
             sys.exit(f'signature at {address:#x} is not unique')
         lines.append((address, new, signature, 8))
     # The port's loader takes at most 4096 bytes per write (src/probe.c, "bad patch entry")
-    for at in range(0, len(code), MAX_WRITE):
-        lines.append((CODE + at, code[at:at + MAX_WRITE], None, 0))
+    for start, part in ((CODE, code), (MORE, more)):
+        for at in range(0, len(part), MAX_WRITE):
+            lines.append((start + at, part[at:at + MAX_WRITE], None, 0))
 
     def line(va, value, signature, offset):
         sha = hashlib.sha256(read(elf, va, len(value))).hexdigest()
@@ -195,7 +201,7 @@ def build(title, e):
      Ghost sharing: shared ghosts (/data/ghosts/*.ctrghost) as extra entries in the Time Trial ghost
      menu, raced as extra ghosts that count for nothing; a button on your own ghost exports it.
      Every shared file is checked field by field before the game gets any of it; the game's own
-     ghost file loader never reads a shared file. The last lines are the new code ({len(code)} bytes). -->
+     ghost file loader never reads a shared file. The last lines are the new code ({len(code) + len(more)} bytes). -->
 <Patch>
   <TitleID><ID>{title}</ID></TitleID>
   <Metadata Title="Crash Team Racing Nitro-Fueled" Name="Ghost Sharing"
@@ -209,7 +215,7 @@ def build(title, e):
 '''
     e['xml'].parent.mkdir(parents=True, exist_ok=True)
     e['xml'].write_text(xml, encoding='utf-8')
-    print(f'{e["xml"].relative_to(HERE)}: {len(e["hooks"])} hooks, code {len(code)} bytes at {CODE:#x}')
+    print(f'{e["xml"].relative_to(HERE)}: {len(e["hooks"])} hooks, code {len(code)} bytes at {CODE:#x} + {len(more)} at {MORE:#x}')
     if e['test_copy'].parent.is_dir():
         e['test_copy'].write_text(xml.replace('AppElf="eboot.bin">', 'AppElf="eboot.bin" isEnabled="true">'),
                                   encoding='utf-8')
