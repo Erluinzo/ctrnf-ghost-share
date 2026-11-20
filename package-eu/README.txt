@@ -1,4 +1,4 @@
-Ghost Sharing 1.2.2 - by Onur
+Ghost Sharing 1.2.3 - by Onur
 
 Race other players' Time Trial ghosts and share your own.
 
@@ -24,3 +24,4 @@ Install: Mods > Add files, choose the ZIP, enable it, restart the game.
 1.2.0: with Replay Mode, the export also gives the run's full race (.crr).
 1.2.2: for OCTR v0.8: shared ghosts go in GhostShare/received (v0.8 no longer
   uses mod-state/user); the export message shows the new folder.
+1.2.3: works with OCTR v0.9 (its built-in Pack Tacho used the same memory).

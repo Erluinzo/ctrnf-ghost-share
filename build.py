@@ -15,16 +15,17 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 GAME_DIR = HERE.parent / 'CTRNF'
-VERSION = '1.2.2'
+VERSION = '1.2.3'
 EBOOT_BASE = 0x400000       # patch XML addresses are ELF addresses + 0x400000
 
-CODE = 0x2320000            # unused zero padding at the end of the code segment (USA 0x2317810-0x233c078,
-                            # EU 0x23177d0-0x233c038)
-CODE_END = 0x2324000        # Ghost Viewer's code starts here; tomtotom's drift gauge ends at 0x23192df
+CODE = 0x231c000            # unused zero padding at the end of the code segment (USA 0x2317810-0x233c078,
+                            # EU 0x23177d0-0x233c038); OCTR v0.9's Pack Tacho uses 0x2322000-0x2326940
+CODE_END = 0x2320000        # and 0x2330000-0x2335124; tomtotom's drift gauge ends at 0x23192df
 MORE = 0x231b000            # functions in section .more: free space after Input Display's code (0x231a000-0x231aa58)
-MORE_END = 0x231c000        # Replay Mode's code starts here
-STATE = 0x2bee680           # after the game's data (ends 0x2bee66d), before the page end 0x2bef000
-STATE_END = 0x2bef000
+MORE_END = 0x231c000        # the main code starts here
+STATE = 0x2beea80           # a gap Pack Tacho (OCTR v0.9) leaves free in the page after the game's data
+STATE_END = 0x2beede0       # (ends 0x2bee66d); Pack Tacho uses 0x2bee700-0x2bee748, 0x2bee900-0x2bee98c,
+                            # 0x2beea00, 0x2beee00-0x2beeee0, 0x2beef00, 0x2beef20-0x2beefa0
 MAX_WRITE = 4096
 # Button that exports your ghost in the ghost menu (igGuiInput signal). Tested in game: Triangle/Y
 # is 11 but also opens the Options screen; R1 is 16 and does nothing else there (L1 17, L2 15, R2 14).
@@ -169,7 +170,7 @@ def build(title, e):
         if read(elf, start, len(part)) != bytes(len(part)):
             sys.exit(f'{e["elf"]}: the area at {start:#x} is not empty')
     data_end = 0x2a00000 + 0x1ee66d
-    if STATE < data_end or STATE + 0x400 > STATE_END - 0x500:   # 0x2beea80-0x2beef80: the ghost spectator's state
+    if STATE < data_end or STATE_END > 0x2beee00:      # src/ghostshare.c checks the size against STATE_END - STATE
         sys.exit('state area is not in the free space after the game data')
 
     lines = []

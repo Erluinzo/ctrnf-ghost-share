@@ -10,7 +10,7 @@ import struct, subprocess, sys
 
 PROBE = 0xfcc430    # the ghost manager's race-end function: its prologue is known
 PROLOGUE = bytes.fromhex('554889e541574156415541545348')
-STATE = 0x2bee680
+STATE = 0x2beea80
 SHARED_SIZE = 112   # void *header; char file[64]; char player[32]; uint8_t chosen; padding
 EXPORT = ['none', 'ok', 'no level', 'no saved ghost', 'bad ghost', 'open failed', 'write failed', 'mount failed']
 

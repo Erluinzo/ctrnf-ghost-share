@@ -104,7 +104,7 @@ struct state {
 };
 enum { EXPORT_NONE, EXPORT_OK, EXPORT_NO_LEVEL, EXPORT_NO_GHOST, EXPORT_BAD_GHOST, EXPORT_OPEN_FAILED,
        EXPORT_WRITE_FAILED, EXPORT_MOUNT_FAILED };
-_Static_assert(sizeof(struct state) <= 0x3f0, "state must fit 0x2bee680-0x2beea80 (the ghost spectator uses the rest)");
+_Static_assert(sizeof(struct state) <= 0x360, "state must fit build.py STATE-STATE_END (0x2beea80-0x2beede0)");
 extern struct state gs GAME;
 
 /* Field access on game objects */
